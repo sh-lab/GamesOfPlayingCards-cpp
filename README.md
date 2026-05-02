@@ -14,7 +14,7 @@ UI、入出力、プラットフォーム依存コードは含みません。
 
 ## 現在の実装範囲
 
-現在は、Playing Cards の基礎、基本 Klondike、Golf を実装しています。
+現在は、Playing Cards の基礎、基本 Klondike、FreeCell、Golf を実装しています。
 
 - `Suit`
 - `Rank`
@@ -22,6 +22,8 @@ UI、入出力、プラットフォーム依存コードは含みません。
 - `Card`
 - `games::klondike::Klondike`
 - `games::klondike::Position` (`Foundation`, `Stock`, `WastePile`, `Tableau`, `Column`)
+- `games::freecell::FreeCell`
+- `games::freecell::Position` (`Cell`, `Foundation`, `Tableau`, `Column`)
 - `games::golf::Golf`
 - `games::golf::Position` (`Hand`, `Deck`, `Field`, `Lane`)
 
@@ -29,6 +31,7 @@ UI、入出力、プラットフォーム依存コードは含みません。
 
 - `shlab::gopc::playing_cards`
 - `shlab::gopc::games`
+- `shlab::gopc::games::freecell`
 - `shlab::gopc::games::golf`
 - `shlab::gopc::games::klondike`
 
@@ -37,6 +40,8 @@ UI、入出力、プラットフォーム依存コードは含みません。
 個別カードは `CardId` を唯一の識別子として扱い、必要に応じて `Card::from_id(...)` から生成します。
 
 `Klondike` は `Card -> Position` の写像を不変状態として保持し、`open`, `draw`, `move_to_foundation`, `redeal`, `move_to_tableau` は既存状態を変更せず、新しい状態を返します。
+
+`FreeCell` も同様に `Card -> Position` の不変状態として保持し、`move_to_cell`, `move_to_foundation`, `move_to_tableau` は既存状態を変更せず、新しい状態を返します。
 
 `Golf` も同様に `Card -> Position` の不変状態として保持し、`move_to_hand` は deck / field から hand への遷移後の新しい状態を返します。`can_loop` ルールと joker あり/なしの deck を扱えます。
 
