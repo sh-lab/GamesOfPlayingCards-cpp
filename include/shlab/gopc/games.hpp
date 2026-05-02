@@ -7,4 +7,5 @@
 #include "shlab/gopc/games/golf.hpp"
 #include "shlab/gopc/games/klondike.hpp"
 #include "shlab/gopc/games/pyramid.hpp"
+#include "shlab/gopc/games/simple_simon.hpp"
 #include "shlab/gopc/games/yukon.hpp"

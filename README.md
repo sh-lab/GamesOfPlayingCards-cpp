@@ -14,7 +14,7 @@ UI、入出力、プラットフォーム依存コードは含みません。
 
 ## 現在の実装範囲
 
-現在は、Playing Cards の基礎、基本 Klondike、Beleaguered Castle、Canfield、Calculation、FreeCell、Pyramid、Yukon、Golf を実装しています。
+現在は、Playing Cards の基礎、基本 Klondike、Beleaguered Castle、Canfield、Calculation、FreeCell、Pyramid、Simple Simon、Yukon、Golf を実装しています。
 
 - `Suit`
 - `Rank`
@@ -32,6 +32,8 @@ UI、入出力、プラットフォーム依存コードは含みません。
 - `games::freecell::Position` (`Cell`, `Foundation`, `Tableau`, `Column`)
 - `games::pyramid::Pyramid`
 - `games::pyramid::Position` (`Deck`, `Discard`, `Field`, `Hand`, `FreeSpace`, `Outside`)
+- `games::simple_simon::SimpleSimon`
+- `games::simple_simon::Position` (`Foundation`, `Tableau`, `Column`)
 - `games::yukon::Yukon`
 - `games::yukon::Position` (`Foundation`, `Tableau`, `Column`)
 - `games::golf::Golf`
@@ -48,6 +50,7 @@ UI、入出力、プラットフォーム依存コードは含みません。
 - `shlab::gopc::games::golf`
 - `shlab::gopc::games::klondike`
 - `shlab::gopc::games::pyramid`
+- `shlab::gopc::games::simple_simon`
 - `shlab::gopc::games::yukon`
 
 `Card` は `CardId` を正規の識別子として保持し、そこから `suit`, `rank`, joker 判定を導出します。
@@ -65,6 +68,8 @@ UI、入出力、プラットフォーム依存コードは含みません。
 `FreeCell` も同様に `Card -> Position` の不変状態として保持し、`move_to_cell`, `move_to_foundation`, `move_to_tableau` は既存状態を変更せず、新しい状態を返します。
 
 `Pyramid` も同様に `Card -> Position` の不変状態として保持し、`remove`, `redeal`, `draw` は既存状態を変更せず、新しい状態を返します。`refcs/Pyramid` に合わせて 52 枚の標準カードに joker 2 枚を加え、joker は `FreeSpace` または `Outside` にのみ存在できます。
+
+`SimpleSimon` も同様に `Card -> Position` の不変状態として保持し、`move_to_foundation`, `move_to_tableau` は既存状態を変更せず、新しい状態を返します。ここでは標準 Simple Simon として、10 tableau columns に `8,8,8,7,6,5,4,3,2,1` で配り、tableau は rank 降順・スート不問で受けつつ、**一手で動かせるのは同一スート降順 tail のみ** としています。
 
 `Yukon` も同様に `Card -> Position` の不変状態として保持し、`open`, `move_to_foundation`, `move_to_tableau` は既存状態を変更せず、新しい状態を返します。`refcs/Yukon` に合わせて stock / waste は持たず、open な tableau カードから下の tail をまとめて移動できます。
 

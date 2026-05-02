@@ -13,6 +13,7 @@ add_library(games_of_playing_cards
     src/shlab/gopc/games/golf.cpp
     src/shlab/gopc/games/klondike.cpp
     src/shlab/gopc/games/pyramid.cpp
+    src/shlab/gopc/games/simple_simon.cpp
     src/shlab/gopc/games/yukon.cpp
 )
 
@@ -56,6 +57,10 @@ if(BUILD_TESTING)
 
     add_executable(pyramid_tests
         tests/shlab/gopc/games/pyramid/pyramid_test.cpp
+    )
+
+    add_executable(simple_simon_tests
+        tests/shlab/gopc/games/simple_simon/simple_simon_test.cpp
     )
 
     add_executable(golf_tests
@@ -102,6 +107,11 @@ if(BUILD_TESTING)
             games_of_playing_cards
     )
 
+    target_link_libraries(simple_simon_tests
+        PRIVATE
+            games_of_playing_cards
+    )
+
     target_link_libraries(golf_tests
         PRIVATE
             games_of_playing_cards
@@ -115,5 +125,6 @@ if(BUILD_TESTING)
     add_test(NAME beleaguered_castle_tests COMMAND beleaguered_castle_tests)
     add_test(NAME yukon_tests COMMAND yukon_tests)
     add_test(NAME pyramid_tests COMMAND pyramid_tests)
+    add_test(NAME simple_simon_tests COMMAND simple_simon_tests)
     add_test(NAME golf_tests COMMAND golf_tests)
 endif()
