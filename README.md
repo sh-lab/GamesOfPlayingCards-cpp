@@ -14,7 +14,7 @@ UI、入出力、プラットフォーム依存コードは含みません。
 
 ## 現在の実装範囲
 
-現在は、Playing Cards の基礎、基本 Klondike、Calculation、FreeCell、Pyramid、Golf を実装しています。
+現在は、Playing Cards の基礎、基本 Klondike、Calculation、FreeCell、Pyramid、Yukon、Golf を実装しています。
 
 - `Suit`
 - `Rank`
@@ -28,6 +28,8 @@ UI、入出力、プラットフォーム依存コードは含みません。
 - `games::freecell::Position` (`Cell`, `Foundation`, `Tableau`, `Column`)
 - `games::pyramid::Pyramid`
 - `games::pyramid::Position` (`Deck`, `Discard`, `Field`, `Hand`, `FreeSpace`, `Outside`)
+- `games::yukon::Yukon`
+- `games::yukon::Position` (`Foundation`, `Tableau`, `Column`)
 - `games::golf::Golf`
 - `games::golf::Position` (`Hand`, `Deck`, `Field`, `Lane`)
 
@@ -40,6 +42,7 @@ UI、入出力、プラットフォーム依存コードは含みません。
 - `shlab::gopc::games::golf`
 - `shlab::gopc::games::klondike`
 - `shlab::gopc::games::pyramid`
+- `shlab::gopc::games::yukon`
 
 `Card` は `CardId` を正規の識別子として保持し、そこから `suit`, `rank`, joker 判定を導出します。
 通常カードは `Card::of(suit, rank)`、joker 系は `Card::from_id(CardId::Joker)` で生成できます。
@@ -52,6 +55,8 @@ UI、入出力、プラットフォーム依存コードは含みません。
 `FreeCell` も同様に `Card -> Position` の不変状態として保持し、`move_to_cell`, `move_to_foundation`, `move_to_tableau` は既存状態を変更せず、新しい状態を返します。
 
 `Pyramid` も同様に `Card -> Position` の不変状態として保持し、`remove`, `redeal`, `draw` は既存状態を変更せず、新しい状態を返します。`refcs/Pyramid` に合わせて 52 枚の標準カードに joker 2 枚を加え、joker は `FreeSpace` または `Outside` にのみ存在できます。
+
+`Yukon` も同様に `Card -> Position` の不変状態として保持し、`open`, `move_to_foundation`, `move_to_tableau` は既存状態を変更せず、新しい状態を返します。`refcs/Yukon` に合わせて stock / waste は持たず、open な tableau カードから下の tail をまとめて移動できます。
 
 `Golf` も同様に `Card -> Position` の不変状態として保持し、`move_to_hand` は deck / field から hand への遷移後の新しい状態を返します。`can_loop` ルールと joker あり/なしの deck を扱えます。
 
