@@ -1,3 +1,4 @@
 #pragma once
 
+#include "shlab/gopc/games/golf.hpp"
 #include "shlab/gopc/games/klondike.hpp"

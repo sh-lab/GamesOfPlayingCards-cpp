@@ -6,6 +6,7 @@ include(CTest)
 
 add_library(games_of_playing_cards
     src/shlab/gopc/playing_cards/card.cpp
+    src/shlab/gopc/games/golf.cpp
     src/shlab/gopc/games/klondike.cpp
 )
 
@@ -27,6 +28,10 @@ if(BUILD_TESTING)
         tests/shlab/gopc/games/klondike/klondike_test.cpp
     )
 
+    add_executable(golf_tests
+        tests/shlab/gopc/games/golf/golf_test.cpp
+    )
+
     target_link_libraries(playing_cards_card_tests
         PRIVATE
             games_of_playing_cards
@@ -37,6 +42,12 @@ if(BUILD_TESTING)
             games_of_playing_cards
     )
 
+    target_link_libraries(golf_tests
+        PRIVATE
+            games_of_playing_cards
+    )
+
     add_test(NAME playing_cards_card_tests COMMAND playing_cards_card_tests)
     add_test(NAME klondike_tests COMMAND klondike_tests)
+    add_test(NAME golf_tests COMMAND golf_tests)
 endif()
