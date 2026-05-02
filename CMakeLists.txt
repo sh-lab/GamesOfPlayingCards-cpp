@@ -6,6 +6,7 @@ include(CTest)
 
 add_library(games_of_playing_cards
     src/shlab/gopc/playing_cards/card.cpp
+    src/shlab/gopc/games/klondike.cpp
 )
 
 add_library(sh_lab::games_of_playing_cards ALIAS games_of_playing_cards)
@@ -22,10 +23,20 @@ if(BUILD_TESTING)
         tests/shlab/gopc/playing_cards/card_test.cpp
     )
 
+    add_executable(klondike_tests
+        tests/shlab/gopc/games/klondike/klondike_test.cpp
+    )
+
     target_link_libraries(playing_cards_card_tests
         PRIVATE
             games_of_playing_cards
     )
 
+    target_link_libraries(klondike_tests
+        PRIVATE
+            games_of_playing_cards
+    )
+
     add_test(NAME playing_cards_card_tests COMMAND playing_cards_card_tests)
+    add_test(NAME klondike_tests COMMAND klondike_tests)
 endif()

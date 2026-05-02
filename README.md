@@ -14,22 +14,26 @@ UI、入出力、プラットフォーム依存コードは含みません。
 
 ## 現在の実装範囲
 
-最初の移植対象として、Playing Cards の基礎となる以下を実装しています。
+現在は、Playing Cards の基礎と基本 Klondike を実装しています。
 
 - `Suit`
 - `Rank`
 - `CardId`
 - `Card`
+- `games::klondike::Klondike`
+- `games::klondike::Position` (`Foundation`, `Stock`, `WastePile`, `Tableau`, `Column`)
 
 公開 API は次の階層を前提にしています。
 
 - `shlab::gopc::playing_cards`
-- `shlab::gopc::core`
 - `shlab::gopc::games`
+- `shlab::gopc::games::klondike`
 
 `Card` は `CardId` を正規の識別子として保持し、そこから `suit`, `rank`, joker 判定を導出します。
 通常カードは `Card::of(suit, rank)`、joker 系は `Card::from_id(CardId::Joker)` で生成できます。
 個別カードは `CardId` を唯一の識別子として扱い、必要に応じて `Card::from_id(...)` から生成します。
+
+`Klondike` は `Card -> Position` の写像を不変状態として保持し、`open`, `draw`, `move_to_foundation`, `redeal`, `move_to_tableau` は既存状態を変更せず、新しい状態を返します。
 
 ## ディレクトリ構成
 
