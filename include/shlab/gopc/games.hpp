@@ -1,5 +1,6 @@
 #pragma once
 
+#include "shlab/gopc/games/beleaguered_castle.hpp"
 #include "shlab/gopc/games/canfield.hpp"
 #include "shlab/gopc/games/calculation.hpp"
 #include "shlab/gopc/games/freecell.hpp"

@@ -14,7 +14,7 @@ UI、入出力、プラットフォーム依存コードは含みません。
 
 ## 現在の実装範囲
 
-現在は、Playing Cards の基礎、基本 Klondike、Canfield、Calculation、FreeCell、Pyramid、Yukon、Golf を実装しています。
+現在は、Playing Cards の基礎、基本 Klondike、Beleaguered Castle、Canfield、Calculation、FreeCell、Pyramid、Yukon、Golf を実装しています。
 
 - `Suit`
 - `Rank`
@@ -22,6 +22,8 @@ UI、入出力、プラットフォーム依存コードは含みません。
 - `Card`
 - `games::klondike::Klondike`
 - `games::klondike::Position` (`Foundation`, `Stock`, `WastePile`, `Tableau`, `Column`)
+- `games::beleaguered_castle::BeleagueredCastle`
+- `games::beleaguered_castle::Position` (`Foundation`, `Tableau`, `Column`)
 - `games::canfield::Canfield`
 - `games::canfield::Position` (`Foundation`, `Stock`, `WastePile`, `Reserve`, `Tableau`, `Column`)
 - `games::calculation::Calculation`
@@ -39,6 +41,7 @@ UI、入出力、プラットフォーム依存コードは含みません。
 
 - `shlab::gopc::playing_cards`
 - `shlab::gopc::games`
+- `shlab::gopc::games::beleaguered_castle`
 - `shlab::gopc::games::canfield`
 - `shlab::gopc::games::calculation`
 - `shlab::gopc::games::freecell`
@@ -52,6 +55,8 @@ UI、入出力、プラットフォーム依存コードは含みません。
 個別カードは `CardId` を唯一の識別子として扱い、必要に応じて `Card::from_id(...)` から生成します。
 
 `Klondike` は `Card -> Position` の写像を不変状態として保持し、`open`, `draw`, `move_to_foundation`, `redeal`, `move_to_tableau` は既存状態を変更せず、新しい状態を返します。
+
+`BeleagueredCastle` も同様に `Card -> Position` の不変状態として保持し、`move_to_foundation`, `move_to_tableau` は既存状態を変更せず、新しい状態を返します。ここでは標準ルールとして、4 aces を foundation に置き、8 tableau columns を rank 降順・スート無関係で構築し、空列には任意カードを置けます。
 
 `Canfield` も同様に `Card -> Position` の不変状態として保持し、`draw`, `redeal`, `move_to_foundation`, `move_to_tableau` は既存状態を変更せず、新しい状態を返します。ここではクラシック寄りの Canfield として、reserve 13 枚、draw 3、waste 再循環、foundation の base rank、empty tableau の reserve 補充を扱います。
 

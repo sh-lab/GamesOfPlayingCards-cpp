@@ -5,6 +5,7 @@ project(GamesOfPlayingCards LANGUAGES CXX)
 include(CTest)
 
 add_library(games_of_playing_cards
+    src/shlab/gopc/games/beleaguered_castle.cpp
     src/shlab/gopc/playing_cards/card.cpp
     src/shlab/gopc/games/canfield.cpp
     src/shlab/gopc/games/calculation.cpp
@@ -45,6 +46,10 @@ if(BUILD_TESTING)
         tests/shlab/gopc/games/canfield/canfield_test.cpp
     )
 
+    add_executable(beleaguered_castle_tests
+        tests/shlab/gopc/games/beleaguered_castle/beleaguered_castle_test.cpp
+    )
+
     add_executable(yukon_tests
         tests/shlab/gopc/games/yukon/yukon_test.cpp
     )
@@ -82,6 +87,11 @@ if(BUILD_TESTING)
             games_of_playing_cards
     )
 
+    target_link_libraries(beleaguered_castle_tests
+        PRIVATE
+            games_of_playing_cards
+    )
+
     target_link_libraries(yukon_tests
         PRIVATE
             games_of_playing_cards
@@ -102,6 +112,7 @@ if(BUILD_TESTING)
     add_test(NAME freecell_tests COMMAND freecell_tests)
     add_test(NAME calculation_tests COMMAND calculation_tests)
     add_test(NAME canfield_tests COMMAND canfield_tests)
+    add_test(NAME beleaguered_castle_tests COMMAND beleaguered_castle_tests)
     add_test(NAME yukon_tests COMMAND yukon_tests)
     add_test(NAME pyramid_tests COMMAND pyramid_tests)
     add_test(NAME golf_tests COMMAND golf_tests)
