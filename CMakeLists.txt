@@ -9,6 +9,7 @@ add_library(games_of_playing_cards
     src/shlab/gopc/games/freecell.cpp
     src/shlab/gopc/games/golf.cpp
     src/shlab/gopc/games/klondike.cpp
+    src/shlab/gopc/games/pyramid.cpp
 )
 
 add_library(sh_lab::games_of_playing_cards ALIAS games_of_playing_cards)
@@ -33,6 +34,10 @@ if(BUILD_TESTING)
         tests/shlab/gopc/games/freecell/freecell_test.cpp
     )
 
+    add_executable(pyramid_tests
+        tests/shlab/gopc/games/pyramid/pyramid_test.cpp
+    )
+
     add_executable(golf_tests
         tests/shlab/gopc/games/golf/golf_test.cpp
     )
@@ -52,6 +57,11 @@ if(BUILD_TESTING)
             games_of_playing_cards
     )
 
+    target_link_libraries(pyramid_tests
+        PRIVATE
+            games_of_playing_cards
+    )
+
     target_link_libraries(golf_tests
         PRIVATE
             games_of_playing_cards
@@ -60,5 +70,6 @@ if(BUILD_TESTING)
     add_test(NAME playing_cards_card_tests COMMAND playing_cards_card_tests)
     add_test(NAME klondike_tests COMMAND klondike_tests)
     add_test(NAME freecell_tests COMMAND freecell_tests)
+    add_test(NAME pyramid_tests COMMAND pyramid_tests)
     add_test(NAME golf_tests COMMAND golf_tests)
 endif()
