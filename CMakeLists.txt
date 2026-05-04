@@ -10,6 +10,7 @@ add_library(games_of_playing_cards
     src/shlab/gopc/games/canfield.cpp
     src/shlab/gopc/games/calculation.cpp
     src/shlab/gopc/games/freecell.cpp
+    src/shlab/gopc/games/four_leaf_clover.cpp
     src/shlab/gopc/games/golf.cpp
     src/shlab/gopc/games/klondike.cpp
     src/shlab/gopc/games/pyramid.cpp
@@ -45,6 +46,10 @@ if(BUILD_TESTING)
 
     add_executable(canfield_tests
         tests/shlab/gopc/games/canfield/canfield_test.cpp
+    )
+
+    add_executable(four_leaf_clover_tests
+        tests/shlab/gopc/games/four_leaf_clover/four_leaf_clover_test.cpp
     )
 
     add_executable(beleaguered_castle_tests
@@ -92,6 +97,11 @@ if(BUILD_TESTING)
             games_of_playing_cards
     )
 
+    target_link_libraries(four_leaf_clover_tests
+        PRIVATE
+            games_of_playing_cards
+    )
+
     target_link_libraries(beleaguered_castle_tests
         PRIVATE
             games_of_playing_cards
@@ -122,6 +132,7 @@ if(BUILD_TESTING)
     add_test(NAME freecell_tests COMMAND freecell_tests)
     add_test(NAME calculation_tests COMMAND calculation_tests)
     add_test(NAME canfield_tests COMMAND canfield_tests)
+    add_test(NAME four_leaf_clover_tests COMMAND four_leaf_clover_tests)
     add_test(NAME beleaguered_castle_tests COMMAND beleaguered_castle_tests)
     add_test(NAME yukon_tests COMMAND yukon_tests)
     add_test(NAME pyramid_tests COMMAND pyramid_tests)

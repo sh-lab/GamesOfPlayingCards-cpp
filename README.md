@@ -41,6 +41,7 @@ Playing Cards の基礎型に加えて、次のゲームを公開しています
 | Canfield | reserve、stock、waste、foundation base rank を扱う Canfield 実装 | [include/shlab/gopc/games/canfield/README.md](include/shlab/gopc/games/canfield/README.md) |
 | Calculation | A / 2 / 3 / 4 を起点とする foundation を持つ Calculation 実装 | [include/shlab/gopc/games/calculation/README.md](include/shlab/gopc/games/calculation/README.md) |
 | FreeCell | cells、foundations、tableau を持つ FreeCell 実装 | [include/shlab/gopc/games/freecell/README.md](include/shlab/gopc/games/freecell/README.md) |
+| Four Leaf Clover | 4x4 の場札から同一スート合計 15 または同一スート JQK を除去する実装 | [include/shlab/gopc/games/four_leaf_clover/README.md](include/shlab/gopc/games/four_leaf_clover/README.md) |
 | Pyramid | field、deck、discard、hand に加えて joker 用の位置を持つ Pyramid 実装 | [include/shlab/gopc/games/pyramid/README.md](include/shlab/gopc/games/pyramid/README.md) |
 | Simple Simon | 10 tableau columns と foundation を持つ Simple Simon 実装 | [include/shlab/gopc/games/simple_simon/README.md](include/shlab/gopc/games/simple_simon/README.md) |
 | Yukon | stock / waste を持たず、open 状態を持つ tableau で表現する Yukon 実装 | [include/shlab/gopc/games/yukon/README.md](include/shlab/gopc/games/yukon/README.md) |
