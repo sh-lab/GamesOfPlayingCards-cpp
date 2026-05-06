@@ -11,8 +11,8 @@
 
 ## 状態モデル
 
-- `FreeCell::state_type` は `std::unordered_map<Card, Position>`
-- `Position` は `Cell`, `Foundation`, `Tableau` の `std::variant`
+- `FreeCell::state_type` は `shlab::gopc::utility::CardState<Position, 52>`
+- `Position` は `Cell`, `Foundation`, `Tableau` を保持する tagged union 型で、`kind()` / `is<T>()` / `get<T>()` / `get_if<T>()` / `visit(...)` で扱える
 - `Cell` は `number` を持つ
 - `Tableau` は `column` と `number` を持つ
 
@@ -30,4 +30,3 @@
 - cells、foundations、tableau を公開状態として扱う
 - 勝利判定は `is_win()` で取得できる
 - tableau / cell / foundation 間の移動は `can_*` と対応する `move_*` の組で公開する
-

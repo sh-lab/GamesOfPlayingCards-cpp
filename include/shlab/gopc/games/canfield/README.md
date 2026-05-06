@@ -11,8 +11,8 @@
 
 ## 状態モデル
 
-- `Canfield::state_type` は `std::unordered_map<Card, Position>`
-- `Position` は `Foundation`, `Stock`, `WastePile`, `Reserve`, `Tableau` の `std::variant`
+- `Canfield::state_type` は `shlab::gopc::utility::CardState<Position, 52>`
+- `Position` は `Foundation`, `Stock`, `WastePile`, `Reserve`, `Tableau` を保持する tagged union 型で、`kind()` / `is<T>()` / `get<T>()` / `get_if<T>()` / `visit(...)` で扱える
 - `Stock`, `WastePile`, `Reserve`, `Tableau` は `number` を持つ
 - `Tableau` は `column` で列を区別する
 - `foundation_base_rank()` で foundation の起点 rank を取得できる
@@ -33,4 +33,3 @@
 - reserve 13 枚、draw 3、waste 再循環を扱う
 - foundation の base rank を状態として保持する
 - empty tableau の reserve 補充を扱う
-

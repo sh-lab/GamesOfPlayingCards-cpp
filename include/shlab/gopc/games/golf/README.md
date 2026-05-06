@@ -11,8 +11,8 @@
 
 ## 状態モデル
 
-- `Golf::state_type` は `std::unordered_map<Card, Position>`
-- `Position` は `Hand`, `Deck`, `Field` の `std::variant`
+- `Golf::state_type` は `shlab::gopc::utility::CardState<Position, 54>`
+- `Position` は `Hand`, `Deck`, `Field` を保持する tagged union 型で、`kind()` / `is<T>()` / `get<T>()` / `get_if<T>()` / `visit(...)` で扱える
 - `Hand` と `Deck` は `number` を持つ
 - `Field` は `lane` と `number` を持つ
 - `can_loop()` で K-A の循環を含むルール設定を取得できる
@@ -32,4 +32,3 @@
 - deck / field から hand への遷移を `move_to_hand()` で表現する
 - `can_loop` ルールの有無を切り替えられる
 - joker あり / なしの deck を扱える
-

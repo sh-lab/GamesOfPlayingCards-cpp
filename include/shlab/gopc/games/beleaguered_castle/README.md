@@ -11,8 +11,8 @@ Beleaguered Castle の状態を `Card -> Position` の不変写像で表現し�
 
 ## 状態モデル
 
-- `BeleagueredCastle::state_type` は `std::unordered_map<Card, Position>`
-- `Position` は `Foundation` と `Tableau` の `std::variant`
+- `BeleagueredCastle::state_type` は `shlab::gopc::utility::CardState<Position, 52>`
+- `Position` は `Foundation` と `Tableau` を保持する tagged union 型で、`kind()` / `is<T>()` / `get<T>()` / `get_if<T>()` / `visit(...)` で扱える
 - `Tableau` は `column` と `number` を持つ
 
 ## 主要操作
@@ -28,4 +28,3 @@ Beleaguered Castle の状態を `Card -> Position` の不変写像で表現し�
 - 4 aces を foundation に置く構成を前提とする
 - 8 tableau columns を rank 降順・スート無関係で構築する
 - 空列には任意のカードを置ける
-

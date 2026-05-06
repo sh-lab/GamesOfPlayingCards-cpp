@@ -11,8 +11,8 @@
 
 ## 状態モデル
 
-- `SimpleSimon::state_type` は `std::unordered_map<Card, Position>`
-- `Position` は `Foundation` と `Tableau` の `std::variant`
+- `SimpleSimon::state_type` は `shlab::gopc::utility::CardState<Position, 52>`
+- `Position` は `Foundation` と `Tableau` を保持する tagged union 型で、`kind()` / `is<T>()` / `get<T>()` / `get_if<T>()` / `visit(...)` で扱える
 - `Tableau` は `column` と `number` を持つ
 
 ## 主要操作
@@ -28,4 +28,3 @@
 - 10 tableau columns に `8, 8, 8, 7, 6, 5, 4, 3, 2, 1` で配る
 - tableau は rank 降順・スート不問で受ける
 - 一手で動かせるのは同一スート降順の tail のみとする
-

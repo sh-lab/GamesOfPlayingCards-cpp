@@ -11,8 +11,8 @@
 
 ## 状態モデル
 
-- `Yukon::state_type` は `std::unordered_map<Card, Position>`
-- `Position` は `Foundation` と `Tableau` の `std::variant`
+- `Yukon::state_type` は `shlab::gopc::utility::CardState<Position, 52>`
+- `Position` は `Foundation` と `Tableau` を保持する tagged union 型で、`kind()` / `is<T>()` / `get<T>()` / `get_if<T>()` / `visit(...)` で扱える
 - `Tableau` は `column`, `number`, `open` を持つ
 
 ## 主要操作

@@ -11,8 +11,8 @@
 
 ## 状態モデル
 
-- `Klondike::state_type` は `std::unordered_map<Card, Position>`
-- `Position` は `Foundation`, `Stock`, `WastePile`, `Tableau` の `std::variant`
+- `Klondike::state_type` は `shlab::gopc::utility::CardState<Position, 52>`
+- `Position` は `Foundation`, `Stock`, `WastePile`, `Tableau` を保持する tagged union 型で、`kind()` / `is<T>()` / `get<T>()` / `get_if<T>()` / `visit(...)` で扱える
 - `Stock` と `WastePile` は `number` で順序を表現
 - `Tableau` は `column`, `number`, `open` を持つ
 
@@ -32,4 +32,3 @@
 - 基本 Klondike を対象とする
 - `stock_count()`, `is_pre_win()`, `is_win()` を公開している
 - tableau の開閉状態は `Tableau::open` で保持する
-

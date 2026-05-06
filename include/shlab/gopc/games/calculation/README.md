@@ -11,8 +11,8 @@
 
 ## 状態モデル
 
-- `Calculation::state_type` は `std::unordered_map<Card, Position>`
-- `Position` は `Foundation`, `Stock`, `WastePile`, `Tableau` の `std::variant`
+- `Calculation::state_type` は `shlab::gopc::utility::CardState<Position, 52>`
+- `Position` は `Foundation`, `Stock`, `WastePile`, `Tableau` を保持する tagged union 型で、`kind()` / `is<T>()` / `get<T>()` / `get_if<T>()` / `visit(...)` で扱える
 - `Foundation` は `FoundationColumn` を持つ
 - `Tableau` は `TableauColumn` と `number` を持つ
 - `Stock` は `number` を持ち、`WastePile` は単一位置として表現する

@@ -17,16 +17,27 @@ UI、描画、入出力、プラットフォーム依存コードは含みませ
 基礎となる公開 API は次の名前空間にあります。
 
 - `shlab::gopc::playing_cards`
+- `shlab::gopc::utility`
 - `shlab::gopc::games`
 - `shlab::gopc::games::<game>`
 
 `Card` は `CardId` を正規の識別子として保持し、そこから `suit`、`rank`、joker 判定を導出します。
-通常カードは `Card::of(suit, rank)`、joker 系は `Card::from_id(CardId::Joker)` で生成できます。
+通常カードは `Card::of(suit, rank)`、joker 系は `Card::from_id(CardId::Joker)` /
+`Card::from_id(CardId::ExtraJoker)` で生成できます。
+
+各ゲームの `state_type` は `shlab::gopc::utility::CardState<Position, N>` で公開されます。
+これは `Card -> Position` の不変な状態モデルを保つための固定容量コンテナで、
+joker を公開状態に含まないゲームでは `N = 52`、joker を扱うゲームでは `N = 54` を使います。
+
+各ゲームの `Position` は `std::variant` ではなく、ゲーム固有の位置型
+(`Foundation`, `Tableau`, `Stock` など) を保持する tagged union 型です。
+`kind()`、`is<T>()`、`get<T>()`、`get_if<T>()`、`visit(...)` で安全に判別・参照できます。
 
 利用時は、基礎型を `playing_cards` から、各ゲームを `games/<game>.hpp` から参照します。
 
 ```cpp
 #include "shlab/gopc/playing_cards/card.hpp"
+#include "shlab/gopc/utility/card_state.hpp"
 #include "shlab/gopc/games/klondike.hpp"
 ```
 
