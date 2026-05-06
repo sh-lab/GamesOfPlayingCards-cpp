@@ -252,4 +252,42 @@ template <typename T>
     return position.template get<T>();
 }
 
+template <typename Visitor>
+constexpr decltype(auto) visit(const Position& pos, Visitor&& vis) {
+    switch (pos.kind()) {
+    case Position::Kind::Deck:
+        return vis(pos.get<Deck>());
+    case Position::Kind::Discard:
+        return vis(pos.get<Discard>());
+    case Position::Kind::Field:
+        return vis(pos.get<Field>());
+    case Position::Kind::Hand:
+        return vis(pos.get<Hand>());
+    case Position::Kind::FreeSpace:
+        return vis(pos.get<FreeSpace>());
+    case Position::Kind::Outside:
+        return vis(pos.get<Outside>());
+    }
+    __builtin_unreachable();
+}
+
+template <typename Visitor>
+constexpr decltype(auto) visit(Position& pos, Visitor&& vis) {
+    switch (pos.kind()) {
+    case Position::Kind::Deck:
+        return vis(pos.get<Deck>());
+    case Position::Kind::Discard:
+        return vis(pos.get<Discard>());
+    case Position::Kind::Field:
+        return vis(pos.get<Field>());
+    case Position::Kind::Hand:
+        return vis(pos.get<Hand>());
+    case Position::Kind::FreeSpace:
+        return vis(pos.get<FreeSpace>());
+    case Position::Kind::Outside:
+        return vis(pos.get<Outside>());
+    }
+    __builtin_unreachable();
+}
+
 }  // namespace shlab::gopc::games::pyramid

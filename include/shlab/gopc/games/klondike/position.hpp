@@ -207,4 +207,34 @@ template <typename T>
     return position.template get<T>();
 }
 
+template <typename Visitor>
+constexpr decltype(auto) visit(const Position& pos, Visitor&& vis) {
+    switch (pos.kind()) {
+    case Position::Kind::Foundation:
+        return vis(pos.get<Foundation>());
+    case Position::Kind::Stock:
+        return vis(pos.get<Stock>());
+    case Position::Kind::WastePile:
+        return vis(pos.get<WastePile>());
+    case Position::Kind::Tableau:
+        return vis(pos.get<Tableau>());
+    }
+    __builtin_unreachable();
+}
+
+template <typename Visitor>
+constexpr decltype(auto) visit(Position& pos, Visitor&& vis) {
+    switch (pos.kind()) {
+    case Position::Kind::Foundation:
+        return vis(pos.get<Foundation>());
+    case Position::Kind::Stock:
+        return vis(pos.get<Stock>());
+    case Position::Kind::WastePile:
+        return vis(pos.get<WastePile>());
+    case Position::Kind::Tableau:
+        return vis(pos.get<Tableau>());
+    }
+    __builtin_unreachable();
+}
+
 }  // namespace shlab::gopc::games::klondike

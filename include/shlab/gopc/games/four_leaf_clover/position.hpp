@@ -181,4 +181,30 @@ template <typename T>
     return position.template get<T>();
 }
 
+template <typename Visitor>
+constexpr decltype(auto) visit(const Position& pos, Visitor&& vis) {
+    switch (pos.kind()) {
+    case Position::Kind::Field:
+        return vis(pos.get<Field>());
+    case Position::Kind::Stock:
+        return vis(pos.get<Stock>());
+    case Position::Kind::Removed:
+        return vis(pos.get<Removed>());
+    }
+    __builtin_unreachable();
+}
+
+template <typename Visitor>
+constexpr decltype(auto) visit(Position& pos, Visitor&& vis) {
+    switch (pos.kind()) {
+    case Position::Kind::Field:
+        return vis(pos.get<Field>());
+    case Position::Kind::Stock:
+        return vis(pos.get<Stock>());
+    case Position::Kind::Removed:
+        return vis(pos.get<Removed>());
+    }
+    __builtin_unreachable();
+}
+
 }  // namespace shlab::gopc::games::four_leaf_clover
