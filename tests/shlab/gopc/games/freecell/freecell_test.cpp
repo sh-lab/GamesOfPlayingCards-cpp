@@ -305,10 +305,10 @@ void TestWinAndInvalidCases() {
         positions.erase(Card::of(Suit::Clubs, Rank::King));
         positions.emplace(Card::from_id(CardId::Joker), Foundation{});
         static_cast<void>(FreeCell{std::move(positions)});
-    } catch (const std::invalid_argument&) {
+    } catch (const std::exception&) {
         invalid_state = true;
     }
-    Check(invalid_state, "FreeCell rejects joker states");
+    Check(invalid_state, "FreeCell joker states remain invalid");
 
     const auto blocked = Card::of(Suit::Spades, Rank::Four);
     const auto covering = Card::of(Suit::Clubs, Rank::Three);

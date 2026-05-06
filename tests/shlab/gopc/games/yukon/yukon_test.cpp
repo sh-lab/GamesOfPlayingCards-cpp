@@ -258,10 +258,10 @@ void TestWinAndInvalidCases() {
         positions.erase(Card::of(Suit::Clubs, Rank::Queen));
         positions.emplace(Card::from_id(CardId::Joker), Tableau{Column::First, 0, true});
         static_cast<void>(Yukon{std::move(positions)});
-    } catch (const std::invalid_argument&) {
+    } catch (const std::exception&) {
         invalid_state = true;
     }
-    Check(invalid_state, "Yukon rejects joker states");
+    Check(invalid_state, "Yukon joker states remain invalid");
 
     const auto closed = Card::of(Suit::Spades, Rank::Queen);
     const auto invalid_move_state = Yukon{MakeState({

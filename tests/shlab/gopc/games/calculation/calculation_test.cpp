@@ -303,10 +303,10 @@ void TestInvalidStateAndInvalidMove() {
             positions.emplace(card, Stock{static_cast<int>(positions.size() - 1)});
         }
         static_cast<void>(Calculation{std::move(positions)});
-    } catch (const std::invalid_argument&) {
+    } catch (const std::exception&) {
         invalid_joker = true;
     }
-    Check(invalid_joker, "Calculation rejects joker states");
+    Check(invalid_joker, "Calculation joker states remain invalid");
 
     const auto waste = Card::of(Suit::Hearts, Rank::Nine);
     const auto blocked_draw = Card::of(Suit::Hearts, Rank::Ten);

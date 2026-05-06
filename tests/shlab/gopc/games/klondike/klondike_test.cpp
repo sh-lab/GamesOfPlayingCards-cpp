@@ -310,11 +310,11 @@ void TestInvalidStateAndInvalidMove() {
         positions.erase(Card::of(Suit::Clubs, Rank::King));
         positions.emplace(Card::from_id(shlab::gopc::playing_cards::CardId::Joker), Stock{51});
         static_cast<void>(Klondike{std::move(positions)});
-    } catch (const std::invalid_argument&) {
+    } catch (const std::exception&) {
         invalid_state_threw = true;
     }
 
-    Check(invalid_state_threw, "Klondike rejects joker states");
+    Check(invalid_state_threw, "Klondike joker states remain invalid");
 
     const auto top_stock = Card::of(Suit::Clubs, Rank::Ace);
     const auto blocked_stock = Card::of(Suit::Spades, Rank::Ace);

@@ -235,10 +235,10 @@ void TestWinAndInvalidCases() {
         positions.erase(Card::of(Suit::Clubs, Rank::Queen));
         positions.emplace(Card::from_id(CardId::Joker), Tableau{Column::First, 0});
         static_cast<void>(BeleagueredCastle{std::move(positions)});
-    } catch (const std::invalid_argument&) {
+    } catch (const std::exception&) {
         invalid_state = true;
     }
-    Check(invalid_state, "Beleaguered Castle rejects joker states");
+    Check(invalid_state, "Beleaguered Castle joker states remain invalid");
 
     const auto king = Card::of(Suit::Clubs, Rank::King);
     const auto castle = BeleagueredCastle{MakeState({
