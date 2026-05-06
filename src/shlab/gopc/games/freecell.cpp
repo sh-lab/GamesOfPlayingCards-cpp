@@ -84,7 +84,7 @@ auto MutablePosition(FreeCell::state_type& positions, const Card& card) -> Posit
 }
 
 bool IsTopTableauCard(const FreeCell::state_type& positions, const Card& card) {
-    const auto* tableau = std::get_if<Tableau>(&LookupPosition(positions, card));
+    const auto* tableau = GetIf<Tableau>(&LookupPosition(positions, card));
     if (tableau == nullptr) {
         return false;
     }
@@ -92,7 +92,7 @@ bool IsTopTableauCard(const FreeCell::state_type& positions, const Card& card) {
     for (const auto& [other_card, position] : positions) {
         (void)other_card;
 
-        if (const auto* other_tableau = std::get_if<Tableau>(&position);
+        if (const auto* other_tableau = GetIf<Tableau>(&position);
             other_tableau != nullptr
             && other_tableau->column == tableau->column
             && other_tableau->number > tableau->number) {
@@ -108,7 +108,7 @@ std::size_t TableauCount(const FreeCell::state_type& positions, const Column col
         positions.begin(),
         positions.end(),
         [column](const auto& pair) {
-            const auto* tableau = std::get_if<Tableau>(&pair.second);
+            const auto* tableau = GetIf<Tableau>(&pair.second);
             return tableau != nullptr && tableau->column == column;
         });
 }
@@ -117,7 +117,7 @@ std::optional<Card> TableauTopCard(const FreeCell::state_type& positions, const 
     std::optional<std::pair<int, Card>> result;
 
     for (const auto& [card, position] : positions) {
-        if (const auto* tableau = std::get_if<Tableau>(&position);
+        if (const auto* tableau = GetIf<Tableau>(&position);
             tableau != nullptr && tableau->column == column) {
             if (!result.has_value() || result->first < tableau->number) {
                 result = std::pair{tableau->number, card};
@@ -135,14 +135,14 @@ std::optional<Card> TableauTopCard(const FreeCell::state_type& positions, const 
 std::vector<std::pair<int, Card>> OrderedTableauStack(
     const FreeCell::state_type& positions,
     const Card& card) {
-    const auto* tableau = std::get_if<Tableau>(&LookupPosition(positions, card));
+    const auto* tableau = GetIf<Tableau>(&LookupPosition(positions, card));
     if (tableau == nullptr) {
         return {};
     }
 
     std::vector<std::pair<int, Card>> stack;
     for (const auto& [candidate_card, position] : positions) {
-        if (const auto* candidate = std::get_if<Tableau>(&position);
+        if (const auto* candidate = GetIf<Tableau>(&position);
             candidate != nullptr
             && candidate->column == tableau->column
             && candidate->number >= tableau->number) {
@@ -185,7 +185,7 @@ std::size_t OccupiedCellCount(const FreeCell::state_type& positions) noexcept {
         positions.begin(),
         positions.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Cell>(pair.second);
+            return HoldsAlternative<Cell>(pair.second);
         });
 }
 
@@ -195,7 +195,7 @@ std::optional<int> FirstEmptyCellNumber(const FreeCell::state_type& positions) {
             positions.begin(),
             positions.end(),
             [cell_number](const auto& pair) {
-                const auto* cell = std::get_if<Cell>(&pair.second);
+                const auto* cell = GetIf<Cell>(&pair.second);
                 return cell != nullptr && cell->number == cell_number;
             });
 
@@ -211,7 +211,7 @@ bool CanMoveTableauToTableau(
     const FreeCell::state_type& positions,
     const Card& card,
     const Column destination_column) {
-    const auto* tableau = std::get_if<Tableau>(&LookupPosition(positions, card));
+    const auto* tableau = GetIf<Tableau>(&LookupPosition(positions, card));
     if (tableau == nullptr || tableau->column == destination_column) {
         return false;
     }
@@ -234,7 +234,7 @@ bool CanMoveTableauToTableau(
                     positions.begin(),
                     positions.end(),
                     [column](const auto& pair) {
-                        const auto* current_tableau = std::get_if<Tableau>(&pair.second);
+                        const auto* current_tableau = GetIf<Tableau>(&pair.second);
                         return current_tableau != nullptr && current_tableau->column == column;
                     });
         });
@@ -267,7 +267,7 @@ void ValidateTableau(const FreeCell::state_type& positions) {
     for (const auto& [card, position] : positions) {
         (void)card;
 
-        if (const auto* tableau = std::get_if<Tableau>(&position); tableau != nullptr) {
+        if (const auto* tableau = GetIf<Tableau>(&position); tableau != nullptr) {
             if (tableau->number < 0) {
                 ThrowInvalidState("Tableau positions must use non-negative indices.");
             }
@@ -297,7 +297,7 @@ void ValidateCells(const FreeCell::state_type& positions) {
     for (const auto& [card, position] : positions) {
         (void)card;
 
-        if (const auto* cell = std::get_if<Cell>(&position); cell != nullptr) {
+        if (const auto* cell = GetIf<Cell>(&position); cell != nullptr) {
             if (cell->number < 0 || cell->number >= kCellCount) {
                 ThrowInvalidState("Cell positions must be in the range [0, 3].");
             }
@@ -333,7 +333,7 @@ void ValidateFoundation(const FreeCell::state_type& positions) {
     std::array<std::vector<int>, 4> ranks_by_suit;
 
     for (const auto& [card, position] : positions) {
-        if (std::holds_alternative<Foundation>(position)) {
+        if (HoldsAlternative<Foundation>(position)) {
             ranks_by_suit[SuitIndex(card.suit())].push_back(ToInt(card.rank()));
         }
     }
@@ -412,12 +412,12 @@ bool FreeCell::is_win() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Foundation>(pair.second);
+            return HoldsAlternative<Foundation>(pair.second);
         });
 }
 
 bool FreeCell::can_move_to_cell(const card_type& card) const {
-    return std::holds_alternative<Tableau>(position_of(card))
+    return HoldsAlternative<Tableau>(position_of(card))
         && IsTopTableauCard(positions_, card)
         && FirstEmptyCellNumber(positions_).has_value();
 }
@@ -438,16 +438,16 @@ bool FreeCell::can_move_to_foundation(const card_type& card) const {
     if (card.rank() != Rank::Ace) {
         const auto previous_card = PreviousRankCard(card);
         if (!previous_card.has_value()
-            || !std::holds_alternative<Foundation>(position_of(*previous_card))) {
+            || !HoldsAlternative<Foundation>(position_of(*previous_card))) {
             return false;
         }
     }
 
-    if (std::holds_alternative<Cell>(position)) {
+    if (HoldsAlternative<Cell>(position)) {
         return true;
     }
 
-    if (std::holds_alternative<Tableau>(position)) {
+    if (HoldsAlternative<Tableau>(position)) {
         return IsTopTableauCard(positions_, card);
     }
 
@@ -466,7 +466,7 @@ FreeCell FreeCell::move_to_foundation(const card_type& card) const {
 
 bool FreeCell::can_move_to_tableau(const card_type& card, const Column column) const {
     const auto& position = position_of(card);
-    if (!std::holds_alternative<Cell>(position) && !CanMoveTableauToTableau(positions_, card, column)) {
+    if (!HoldsAlternative<Cell>(position) && !CanMoveTableauToTableau(positions_, card, column)) {
         return false;
     }
 
@@ -486,7 +486,7 @@ FreeCell FreeCell::move_to_tableau(const card_type& card, const Column column) c
     auto next_positions = positions_;
     auto destination_count = static_cast<int>(TableauCount(next_positions, column));
 
-    if (std::holds_alternative<Tableau>(position_of(card))) {
+    if (HoldsAlternative<Tableau>(position_of(card))) {
         const auto stack = OrderedTableauStack(next_positions, card);
         for (const auto& [unused_number, current_card] : stack) {
             (void)unused_number;

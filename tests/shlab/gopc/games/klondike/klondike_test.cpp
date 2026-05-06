@@ -134,19 +134,19 @@ void TestDealBuildsInitialState() {
     Check(!klondike.is_win(), "Initial deal is not win");
 
     CheckEqual(
-        std::get<Tableau>(klondike.position_of(deck[0])),
+        Get<Tableau>(klondike.position_of(deck[0])),
         Tableau{Column::First, 0, true},
         "First tableau card is open");
     CheckEqual(
-        std::get<Tableau>(klondike.position_of(deck[1])),
+        Get<Tableau>(klondike.position_of(deck[1])),
         Tableau{Column::Second, 0, false},
         "Second column starts with a closed card");
     CheckEqual(
-        std::get<Tableau>(klondike.position_of(deck[2])),
+        Get<Tableau>(klondike.position_of(deck[2])),
         Tableau{Column::Second, 1, true},
         "Second column top card is open");
     CheckEqual(
-        std::get<Stock>(klondike.position_of(deck[51])),
+        Get<Stock>(klondike.position_of(deck[51])),
         Stock{23},
         "Last undealt card becomes stock top");
 }
@@ -162,11 +162,11 @@ void TestOpenReturnsNewState() {
     const auto opened = klondike.open(target);
 
     CheckEqual(
-        std::get<Tableau>(klondike.position_of(target)),
+        Get<Tableau>(klondike.position_of(target)),
         Tableau{Column::First, 0, false},
         "Open does not mutate the original state");
     CheckEqual(
-        std::get<Tableau>(opened.position_of(target)),
+        Get<Tableau>(opened.position_of(target)),
         Tableau{Column::First, 0, true},
         "Open returns a state with the card face up");
 }
@@ -182,11 +182,11 @@ void TestDrawReturnsNewState() {
     const auto drawn = klondike.draw(top_stock);
 
     CheckEqual(
-        std::get<Stock>(klondike.position_of(top_stock)).number + 1,
+        Get<Stock>(klondike.position_of(top_stock)).number + 1,
         static_cast<int>(klondike.stock_count()),
         "Original stock order is unchanged");
     CheckEqual(
-        std::get<WastePile>(drawn.position_of(top_stock)),
+        Get<WastePile>(drawn.position_of(top_stock)),
         WastePile{0},
         "Draw moves the card to the waste pile");
     CheckEqual(drawn.stock_count(), std::size_t{51}, "Draw reduces stock count");
@@ -202,8 +202,8 @@ void TestMoveToFoundationFromWaste() {
 
     const auto next = klondike.move_to_foundation(ace_of_clubs);
 
-    Check(std::holds_alternative<Foundation>(next.position_of(ace_of_clubs)), "Ace moved to foundation");
-    Check(std::holds_alternative<WastePile>(klondike.position_of(ace_of_clubs)), "Original state is unchanged");
+    Check(HoldsAlternative<Foundation>(next.position_of(ace_of_clubs)), "Ace moved to foundation");
+    Check(HoldsAlternative<WastePile>(klondike.position_of(ace_of_clubs)), "Original state is unchanged");
 }
 
 void TestRedealFlipsWasteBackIntoStock() {
@@ -221,8 +221,8 @@ void TestRedealFlipsWasteBackIntoStock() {
     const auto last = StandardDeck()[51];
 
     Check(klondike.can_redeal(), "Waste-only state can be redealt");
-    CheckEqual(std::get<Stock>(redealt.position_of(last)), Stock{0}, "Waste top becomes stock bottom");
-    CheckEqual(std::get<Stock>(redealt.position_of(first)), Stock{51}, "Waste bottom becomes stock top");
+    CheckEqual(Get<Stock>(redealt.position_of(last)), Stock{0}, "Waste top becomes stock bottom");
+    CheckEqual(Get<Stock>(redealt.position_of(first)), Stock{51}, "Waste bottom becomes stock top");
 }
 
 void TestMoveWasteCardToTableau() {
@@ -238,7 +238,7 @@ void TestMoveWasteCardToTableau() {
     const auto next = klondike.move_to_tableau(moving, Column::First);
 
     CheckEqual(
-        std::get<Tableau>(next.position_of(moving)),
+        Get<Tableau>(next.position_of(moving)),
         Tableau{Column::First, 1, true},
         "Waste card lands on top of destination tableau");
 }
@@ -261,15 +261,15 @@ void TestMoveTableauStack() {
     const auto next = klondike.move_to_tableau(moving_bottom, Column::First);
 
     CheckEqual(
-        std::get<Tableau>(next.position_of(moving_bottom)),
+        Get<Tableau>(next.position_of(moving_bottom)),
         Tableau{Column::First, 1, true},
         "Moved stack keeps the bottom card order");
     CheckEqual(
-        std::get<Tableau>(next.position_of(moving_middle)),
+        Get<Tableau>(next.position_of(moving_middle)),
         Tableau{Column::First, 2, true},
         "Moved stack keeps the middle card order");
     CheckEqual(
-        std::get<Tableau>(next.position_of(moving_top)),
+        Get<Tableau>(next.position_of(moving_top)),
         Tableau{Column::First, 3, true},
         "Moved stack keeps the top card order");
 }
@@ -285,7 +285,7 @@ void TestMoveFoundationKingToEmptyTableau() {
     const auto next = klondike.move_to_tableau(king_of_spades, Column::First);
 
     CheckEqual(
-        std::get<Tableau>(next.position_of(king_of_spades)),
+        Get<Tableau>(next.position_of(king_of_spades)),
         Tableau{Column::First, 0, true},
         "Foundation king moves onto an empty tableau");
 }

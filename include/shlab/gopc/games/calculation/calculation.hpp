@@ -2,13 +2,13 @@
 
 #include <optional>
 #include <span>
-#include <unordered_map>
 
 #include "shlab/gopc/games/calculation/foundation_column.hpp"
 #include "shlab/gopc/games/calculation/position.hpp"
 #include "shlab/gopc/games/calculation/tableau_column.hpp"
 #include "shlab/gopc/playing_cards/card.hpp"
 #include "shlab/gopc/playing_cards/rank.hpp"
+#include "shlab/gopc/utility/card_state.hpp"
 
 namespace shlab::gopc::games::calculation {
 
@@ -16,7 +16,7 @@ class Calculation {
 public:
     using card_type = shlab::gopc::playing_cards::Card;
     using rank_type = shlab::gopc::playing_cards::Rank;
-    using state_type = std::unordered_map<card_type, Position>;
+    using state_type = shlab::gopc::utility::CardState<Position, 52>;
 
     explicit Calculation(state_type positions);
 

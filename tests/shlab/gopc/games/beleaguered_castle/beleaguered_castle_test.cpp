@@ -101,7 +101,7 @@ BeleagueredCastle::state_type MakeState(
             throw std::invalid_argument("Duplicate fixed card.");
         }
 
-        if (const auto* tableau = std::get_if<Tableau>(&position); tableau != nullptr) {
+        if (const auto* tableau = GetIf<Tableau>(&position); tableau != nullptr) {
             tableau_numbers[static_cast<std::size_t>(tableau->column)].push_back(tableau->number);
         }
 
@@ -133,25 +133,25 @@ void TestDealBuildsInitialState() {
     CheckEqual(castle.card_positions().size(), std::size_t{52}, "Deal keeps all cards");
     Check(!castle.is_win(), "Initial deal is not a win");
 
-    Check(std::holds_alternative<Foundation>(castle.position_of(Card::of(Suit::Spades, Rank::Ace))), "Ace of spades starts on foundation");
-    Check(std::holds_alternative<Foundation>(castle.position_of(Card::of(Suit::Hearts, Rank::Ace))), "Ace of hearts starts on foundation");
-    Check(std::holds_alternative<Foundation>(castle.position_of(Card::of(Suit::Diamonds, Rank::Ace))), "Ace of diamonds starts on foundation");
-    Check(std::holds_alternative<Foundation>(castle.position_of(Card::of(Suit::Clubs, Rank::Ace))), "Ace of clubs starts on foundation");
+    Check(HoldsAlternative<Foundation>(castle.position_of(Card::of(Suit::Spades, Rank::Ace))), "Ace of spades starts on foundation");
+    Check(HoldsAlternative<Foundation>(castle.position_of(Card::of(Suit::Hearts, Rank::Ace))), "Ace of hearts starts on foundation");
+    Check(HoldsAlternative<Foundation>(castle.position_of(Card::of(Suit::Diamonds, Rank::Ace))), "Ace of diamonds starts on foundation");
+    Check(HoldsAlternative<Foundation>(castle.position_of(Card::of(Suit::Clubs, Rank::Ace))), "Ace of clubs starts on foundation");
 
     CheckEqual(
-        std::get<Tableau>(castle.position_of(deck[1])),
+        Get<Tableau>(castle.position_of(deck[1])),
         Tableau{Column::First, 0},
         "First non-ace card starts the first tableau column");
     CheckEqual(
-        std::get<Tableau>(castle.position_of(deck[6])),
+        Get<Tableau>(castle.position_of(deck[6])),
         Tableau{Column::First, 5},
         "First tableau column has six cards");
     CheckEqual(
-        std::get<Tableau>(castle.position_of(deck[7])),
+        Get<Tableau>(castle.position_of(deck[7])),
         Tableau{Column::Second, 0},
         "Second tableau column follows the first");
     CheckEqual(
-        std::get<Tableau>(castle.position_of(deck[51])),
+        Get<Tableau>(castle.position_of(deck[51])),
         Tableau{Column::Eighth, 5},
         "Last card becomes the top of the eighth tableau column");
 }
@@ -169,10 +169,10 @@ void TestMoveToFoundationReturnsNewState() {
     const auto next = castle.move_to_foundation(two);
 
     CheckEqual(
-        std::get<Tableau>(castle.position_of(two)),
+        Get<Tableau>(castle.position_of(two)),
         Tableau{Column::First, 0},
         "Original state is unchanged after foundation move");
-    Check(std::holds_alternative<Foundation>(next.position_of(two)), "Moved card becomes a foundation card");
+    Check(HoldsAlternative<Foundation>(next.position_of(two)), "Moved card becomes a foundation card");
 }
 
 void TestMoveToTableauReturnsNewState() {
@@ -188,11 +188,11 @@ void TestMoveToTableauReturnsNewState() {
     const auto next = castle.move_to_tableau(moving, Column::Second);
 
     CheckEqual(
-        std::get<Tableau>(castle.position_of(moving)),
+        Get<Tableau>(castle.position_of(moving)),
         Tableau{Column::First, 0},
         "Original state is unchanged after tableau move");
     CheckEqual(
-        std::get<Tableau>(next.position_of(moving)),
+        Get<Tableau>(next.position_of(moving)),
         Tableau{Column::Second, 1},
         "Moved card becomes the new tableau top");
 }

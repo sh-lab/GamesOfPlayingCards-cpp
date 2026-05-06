@@ -147,11 +147,11 @@ Calculation::state_type MakeState(
             throw std::invalid_argument("Duplicate fixed card.");
         }
 
-        if (const auto* tableau = std::get_if<Tableau>(&position); tableau != nullptr) {
+        if (const auto* tableau = GetIf<Tableau>(&position); tableau != nullptr) {
             tableau_numbers[static_cast<std::size_t>(tableau->column)].push_back(tableau->number);
-        } else if (std::holds_alternative<WastePile>(position)) {
+        } else if (HoldsAlternative<WastePile>(position)) {
             has_waste = true;
-        } else if (const auto* stock = std::get_if<Stock>(&position); stock != nullptr) {
+        } else if (const auto* stock = GetIf<Stock>(&position); stock != nullptr) {
             stock_numbers.push_back(stock->number);
         }
 
@@ -204,7 +204,7 @@ void TestDealBuildsInitialState() {
     CheckEqual(calculation.next_rank(FoundationColumn::Third), Rank::Six, "Third foundation starts from three");
     CheckEqual(calculation.next_rank(FoundationColumn::Fourth), Rank::Eight, "Fourth foundation starts from four");
 
-    Check(std::holds_alternative<WastePile>(calculation.position_of(deck[4])), "First remaining card becomes waste");
+    Check(HoldsAlternative<WastePile>(calculation.position_of(deck[4])), "First remaining card becomes waste");
 }
 
 void TestDrawReturnsNewState() {
@@ -223,8 +223,8 @@ void TestDrawReturnsNewState() {
     Check(!calculation.can_draw(blocked_stock), "Only the top stock card can be drawn");
 
     const auto next = calculation.draw(top_stock);
-    CheckEqual(std::get<Stock>(calculation.position_of(top_stock)), Stock{1}, "Original state is unchanged after draw");
-    Check(std::holds_alternative<WastePile>(next.position_of(top_stock)), "Draw moves the card to waste");
+    CheckEqual(Get<Stock>(calculation.position_of(top_stock)), Stock{1}, "Original state is unchanged after draw");
+    Check(HoldsAlternative<WastePile>(next.position_of(top_stock)), "Draw moves the card to waste");
 }
 
 void TestWasteMoveToTableauReturnsNewState() {
@@ -240,8 +240,8 @@ void TestWasteMoveToTableauReturnsNewState() {
     Check(calculation.can_move_to_tableau(waste), "Waste card can move to tableau");
 
     const auto next = calculation.move_to_tableau(waste, TableauColumn::Second);
-    Check(std::holds_alternative<WastePile>(calculation.position_of(waste)), "Original state is unchanged after tableau move");
-    CheckEqual(std::get<Tableau>(next.position_of(waste)), Tableau{TableauColumn::Second, 0}, "Waste card becomes the tableau top");
+    Check(HoldsAlternative<WastePile>(calculation.position_of(waste)), "Original state is unchanged after tableau move");
+    CheckEqual(Get<Tableau>(next.position_of(waste)), Tableau{TableauColumn::Second, 0}, "Waste card becomes the tableau top");
 }
 
 void TestMoveToFoundationFromWasteAndTableau() {
@@ -262,7 +262,7 @@ void TestMoveToFoundationFromWasteAndTableau() {
 
     const auto waste_next = from_waste.move_to_foundation(two, FoundationColumn::First);
     CheckEqual(
-        std::get<Foundation>(waste_next.position_of(two)),
+        Get<Foundation>(waste_next.position_of(two)),
         Foundation{FoundationColumn::First},
         "Waste card moves to the requested foundation column");
 

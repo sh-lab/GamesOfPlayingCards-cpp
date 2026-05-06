@@ -21,6 +21,45 @@ using Suit = shlab::gopc::playing_cards::Suit;
 constexpr std::size_t kStandardDeckSize = 52;
 constexpr int kTableauColumnCount = 7;
 
+[[noreturn]] void ThrowInvalidState(const char* message);
+[[noreturn]] void ThrowInvalidMove(const char* message);
+
+struct OrderedCardList {
+    std::array<std::optional<Card>, kStandardDeckSize> cards{};
+    std::size_t size{};
+
+    [[nodiscard]] bool empty() const noexcept {
+        return size == 0;
+    }
+};
+
+struct ContiguousNumbers {
+    std::array<bool, kStandardDeckSize> occupied{};
+    std::size_t count{};
+
+    void add(const int number, const char* negative_message) {
+        if (number < 0) {
+            ThrowInvalidState(negative_message);
+        }
+
+        const auto index = static_cast<std::size_t>(number);
+        if (index >= occupied.size()) {
+            ThrowInvalidState(negative_message);
+        }
+
+        occupied[index] = true;
+        ++count;
+    }
+
+    void validate(const char* message) const {
+        for (std::size_t i = 0; i < count; ++i) {
+            if (!occupied[i]) {
+                ThrowInvalidState(message);
+            }
+        }
+    }
+};
+
 [[noreturn]] void ThrowInvalidState(const char* message) {
     throw std::invalid_argument(message);
 }
@@ -85,7 +124,7 @@ auto MutablePosition(
 }
 
 bool IsTopWasteCard(const Klondike::state_type& positions, const Card& card) {
-    const auto* waste = std::get_if<WastePile>(&LookupPosition(positions, card));
+    const auto* waste = GetIf<WastePile>(&LookupPosition(positions, card));
     if (waste == nullptr) {
         return false;
     }
@@ -93,7 +132,7 @@ bool IsTopWasteCard(const Klondike::state_type& positions, const Card& card) {
     for (const auto& [other_card, position] : positions) {
         (void)other_card;
 
-        if (const auto* other_waste = std::get_if<WastePile>(&position);
+        if (const auto* other_waste = GetIf<WastePile>(&position);
             other_waste != nullptr && other_waste->number > waste->number) {
             return false;
         }
@@ -103,7 +142,7 @@ bool IsTopWasteCard(const Klondike::state_type& positions, const Card& card) {
 }
 
 bool IsTopStockCard(const Klondike::state_type& positions, const Card& card) {
-    const auto* stock = std::get_if<Stock>(&LookupPosition(positions, card));
+    const auto* stock = GetIf<Stock>(&LookupPosition(positions, card));
     if (stock == nullptr) {
         return false;
     }
@@ -111,7 +150,7 @@ bool IsTopStockCard(const Klondike::state_type& positions, const Card& card) {
     for (const auto& [other_card, position] : positions) {
         (void)other_card;
 
-        if (const auto* other_stock = std::get_if<Stock>(&position);
+        if (const auto* other_stock = GetIf<Stock>(&position);
             other_stock != nullptr && other_stock->number > stock->number) {
             return false;
         }
@@ -121,7 +160,7 @@ bool IsTopStockCard(const Klondike::state_type& positions, const Card& card) {
 }
 
 bool IsTopTableauCard(const Klondike::state_type& positions, const Card& card) {
-    const auto* tableau = std::get_if<Tableau>(&LookupPosition(positions, card));
+    const auto* tableau = GetIf<Tableau>(&LookupPosition(positions, card));
     if (tableau == nullptr) {
         return false;
     }
@@ -129,7 +168,7 @@ bool IsTopTableauCard(const Klondike::state_type& positions, const Card& card) {
     for (const auto& [other_card, position] : positions) {
         (void)other_card;
 
-        if (const auto* other_tableau = std::get_if<Tableau>(&position);
+        if (const auto* other_tableau = GetIf<Tableau>(&position);
             other_tableau != nullptr
             && other_tableau->column == tableau->column
             && other_tableau->number > tableau->number) {
@@ -141,13 +180,13 @@ bool IsTopTableauCard(const Klondike::state_type& positions, const Card& card) {
 }
 
 bool IsTopFoundationCard(const Klondike::state_type& positions, const Card& card) {
-    if (!std::holds_alternative<Foundation>(LookupPosition(positions, card))) {
+    if (!HoldsAlternative<Foundation>(LookupPosition(positions, card))) {
         return false;
     }
 
     const auto next_card = NextRankCard(card);
     return !next_card.has_value()
-        || !std::holds_alternative<Foundation>(LookupPosition(positions, *next_card));
+        || !HoldsAlternative<Foundation>(LookupPosition(positions, *next_card));
 }
 
 std::size_t TableauCount(
@@ -157,35 +196,32 @@ std::size_t TableauCount(
         positions.begin(),
         positions.end(),
         [column](const auto& pair) {
-            const auto* tableau = std::get_if<Tableau>(&pair.second);
+            const auto* tableau = GetIf<Tableau>(&pair.second);
             return tableau != nullptr && tableau->column == column;
         });
 }
 
-std::vector<std::pair<int, Card>> OrderedTableauStack(
+OrderedCardList OrderedTableauStack(
     const Klondike::state_type& positions,
     const Card& card) {
-    const auto* tableau = std::get_if<Tableau>(&LookupPosition(positions, card));
+    const auto* tableau = GetIf<Tableau>(&LookupPosition(positions, card));
     if (tableau == nullptr) {
         return {};
     }
 
-    std::vector<std::pair<int, Card>> stack;
+    OrderedCardList stack;
     for (const auto& [candidate_card, position] : positions) {
-        if (const auto* candidate = std::get_if<Tableau>(&position);
+        if (const auto* candidate = GetIf<Tableau>(&position);
             candidate != nullptr
             && candidate->column == tableau->column
             && candidate->number >= tableau->number) {
-            stack.emplace_back(candidate->number, candidate_card);
+            const auto index = static_cast<std::size_t>(candidate->number - tableau->number);
+            stack.cards[index] = candidate_card;
+            if (stack.size <= index) {
+                stack.size = index + 1;
+            }
         }
     }
-
-    std::sort(
-        stack.begin(),
-        stack.end(),
-        [](const auto& lhs, const auto& rhs) {
-            return lhs.first < rhs.first;
-        });
 
     return stack;
 }
@@ -193,7 +229,7 @@ std::vector<std::pair<int, Card>> OrderedTableauStack(
 bool HasValidMovableTableauSequence(
     const Klondike::state_type& positions,
     const Card& card) {
-    const auto* tableau = std::get_if<Tableau>(&LookupPosition(positions, card));
+    const auto* tableau = GetIf<Tableau>(&LookupPosition(positions, card));
     if (tableau == nullptr || !tableau->open) {
         return false;
     }
@@ -203,10 +239,10 @@ bool HasValidMovableTableauSequence(
         return false;
     }
 
-    auto previous = stack.front().second;
-    for (std::size_t i = 1; i < stack.size(); ++i) {
-        const auto current = stack[i].second;
-        const auto* current_tableau = std::get_if<Tableau>(&LookupPosition(positions, current));
+    auto previous = *stack.cards[0];
+    for (std::size_t i = 1; i < stack.size; ++i) {
+        const auto current = *stack.cards[i];
+        const auto* current_tableau = GetIf<Tableau>(&LookupPosition(positions, current));
         if (current_tableau == nullptr || !current_tableau->open) {
             return false;
         }
@@ -227,7 +263,7 @@ std::optional<Card> TableauTopCard(
     std::optional<std::pair<int, Card>> result;
 
     for (const auto& [card, position] : positions) {
-        if (const auto* tableau = std::get_if<Tableau>(&position);
+        if (const auto* tableau = GetIf<Tableau>(&position);
             tableau != nullptr && tableau->column == column) {
             if (!result.has_value() || result->first < tableau->number) {
                 result = std::pair{tableau->number, card};
@@ -256,80 +292,63 @@ void ValidateDistinctStandardCards(const Klondike::state_type& positions) {
     }
 }
 
-void ValidateSequence(const std::vector<int>& numbers, const char* message) {
-    for (std::size_t i = 0; i < numbers.size(); ++i) {
-        if (numbers[i] != static_cast<int>(i)) {
-            ThrowInvalidState(message);
-        }
-    }
-}
-
 void ValidateStockAndWaste(const Klondike::state_type& positions) {
-    std::vector<int> stock_numbers;
-    std::vector<int> waste_numbers;
+    ContiguousNumbers stock_numbers;
+    ContiguousNumbers waste_numbers;
 
     for (const auto& [card, position] : positions) {
         (void)card;
 
-        if (const auto* stock = std::get_if<Stock>(&position); stock != nullptr) {
-            if (stock->number < 0) {
-                ThrowInvalidState("Stock positions must use non-negative indices.");
-            }
-            stock_numbers.push_back(stock->number);
-        } else if (const auto* waste = std::get_if<WastePile>(&position); waste != nullptr) {
-            if (waste->number < 0) {
-                ThrowInvalidState("Waste pile positions must use non-negative indices.");
-            }
-            waste_numbers.push_back(waste->number);
+        if (const auto* stock = GetIf<Stock>(&position); stock != nullptr) {
+            stock_numbers.add(stock->number, "Stock positions must use non-negative indices.");
+        } else if (const auto* waste = GetIf<WastePile>(&position); waste != nullptr) {
+            waste_numbers.add(waste->number, "Waste pile positions must use non-negative indices.");
         }
     }
 
-    std::sort(stock_numbers.begin(), stock_numbers.end());
-    std::sort(waste_numbers.begin(), waste_numbers.end());
-
-    ValidateSequence(stock_numbers, "Stock positions must be contiguous from zero.");
-    ValidateSequence(waste_numbers, "Waste pile positions must be contiguous from zero.");
+    stock_numbers.validate("Stock positions must be contiguous from zero.");
+    waste_numbers.validate("Waste pile positions must be contiguous from zero.");
 }
 
 void ValidateTableau(const Klondike::state_type& positions) {
-    std::array<std::vector<Tableau>, kTableauColumnCount> columns;
+    std::array<std::array<std::optional<Tableau>, kStandardDeckSize>, kTableauColumnCount> columns{};
+    std::array<std::size_t, kTableauColumnCount> counts{};
 
     for (const auto& [card, position] : positions) {
         (void)card;
 
-        if (const auto* tableau = std::get_if<Tableau>(&position); tableau != nullptr) {
-            if (tableau->number < 0) {
-                ThrowInvalidState("Tableau positions must use non-negative indices.");
-            }
-
+        if (const auto* tableau = GetIf<Tableau>(&position); tableau != nullptr) {
             const auto column_index = ToInt(tableau->column);
             if (column_index < 0 || column_index >= kTableauColumnCount) {
                 ThrowInvalidState("Tableau column is out of range.");
             }
 
-            columns[static_cast<std::size_t>(column_index)].push_back(*tableau);
+            if (tableau->number < 0) {
+                ThrowInvalidState("Tableau positions must use non-negative indices.");
+            }
+
+            const auto number_index = static_cast<std::size_t>(tableau->number);
+            if (number_index >= kStandardDeckSize) {
+                ThrowInvalidState("Tableau positions must use non-negative indices.");
+            }
+
+            columns[static_cast<std::size_t>(column_index)][number_index] = *tableau;
+            ++counts[static_cast<std::size_t>(column_index)];
         }
     }
 
-    for (auto& column : columns) {
-        std::sort(
-            column.begin(),
-            column.end(),
-            [](const Tableau& lhs, const Tableau& rhs) {
-                return lhs.number < rhs.number;
-            });
-
+    for (std::size_t column_index = 0; column_index < columns.size(); ++column_index) {
         bool seen_open = false;
-        for (std::size_t i = 0; i < column.size(); ++i) {
-            if (column[i].number != static_cast<int>(i)) {
+        for (std::size_t i = 0; i < counts[column_index]; ++i) {
+            if (!columns[column_index][i].has_value()) {
                 ThrowInvalidState("Tableau positions must be contiguous within each column.");
             }
 
-            if (seen_open && !column[i].open) {
+            if (seen_open && !columns[column_index][i]->open) {
                 ThrowInvalidState("Closed tableau cards cannot appear above open cards.");
             }
 
-            seen_open = seen_open || column[i].open;
+            seen_open = seen_open || columns[column_index][i]->open;
         }
     }
 }
@@ -352,18 +371,20 @@ std::size_t SuitIndex(const Suit suit) {
 }
 
 void ValidateFoundation(const Klondike::state_type& positions) {
-    std::array<std::vector<int>, 4> ranks_by_suit;
+    std::array<std::array<bool, 13>, 4> ranks_by_suit{};
+    std::array<std::size_t, 4> counts{};
 
     for (const auto& [card, position] : positions) {
-        if (std::holds_alternative<Foundation>(position)) {
-            ranks_by_suit[SuitIndex(card.suit())].push_back(ToInt(card.rank()));
+        if (HoldsAlternative<Foundation>(position)) {
+            const auto suit_index = SuitIndex(card.suit());
+            ranks_by_suit[suit_index][static_cast<std::size_t>(ToInt(card.rank()) - 1)] = true;
+            ++counts[suit_index];
         }
     }
 
-    for (auto& ranks : ranks_by_suit) {
-        std::sort(ranks.begin(), ranks.end());
-        for (std::size_t i = 0; i < ranks.size(); ++i) {
-            if (ranks[i] != static_cast<int>(i) + 1) {
+    for (std::size_t suit_index = 0; suit_index < ranks_by_suit.size(); ++suit_index) {
+        for (std::size_t i = 0; i < counts[suit_index]; ++i) {
+            if (!ranks_by_suit[suit_index][i]) {
                 ThrowInvalidState(
                     "Foundation cards must form a contiguous run from ace within each suit.");
             }
@@ -384,19 +405,19 @@ bool CanMoveSourceToTableau(
     const Column destination_column) {
     const auto& position = LookupPosition(positions, card);
 
-    if (std::holds_alternative<Stock>(position)) {
+    if (HoldsAlternative<Stock>(position)) {
         return false;
     }
 
-    if (const auto* waste = std::get_if<WastePile>(&position); waste != nullptr) {
+    if (const auto* waste = GetIf<WastePile>(&position); waste != nullptr) {
         return IsTopWasteCard(positions, card);
     }
 
-    if (std::holds_alternative<Foundation>(position)) {
+    if (HoldsAlternative<Foundation>(position)) {
         return IsTopFoundationCard(positions, card);
     }
 
-    if (const auto* tableau = std::get_if<Tableau>(&position); tableau != nullptr) {
+    if (const auto* tableau = GetIf<Tableau>(&position); tableau != nullptr) {
         return tableau->column != destination_column
             && HasValidMovableTableauSequence(positions, card);
     }
@@ -467,7 +488,7 @@ std::size_t Klondike::stock_count() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Stock>(pair.second);
+            return HoldsAlternative<Stock>(pair.second);
         });
 }
 
@@ -476,7 +497,7 @@ bool Klondike::is_win() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Foundation>(pair.second);
+            return HoldsAlternative<Foundation>(pair.second);
         });
 }
 
@@ -485,17 +506,17 @@ bool Klondike::is_pre_win() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            if (std::holds_alternative<Foundation>(pair.second)) {
+            if (HoldsAlternative<Foundation>(pair.second)) {
                 return true;
             }
 
-            const auto* tableau = std::get_if<Tableau>(&pair.second);
+            const auto* tableau = GetIf<Tableau>(&pair.second);
             return tableau != nullptr && tableau->open;
         });
 }
 
 bool Klondike::can_open(const card_type& card) const {
-    const auto* tableau = std::get_if<Tableau>(&position_of(card));
+    const auto* tableau = GetIf<Tableau>(&position_of(card));
     return tableau != nullptr && !tableau->open && IsTopTableauCard(positions_, card);
 }
 
@@ -505,7 +526,7 @@ Klondike Klondike::open(const card_type& card) const {
     }
 
     auto next_positions = positions_;
-    const auto tableau = std::get<Tableau>(position_of(card));
+    const auto tableau = Get<Tableau>(position_of(card));
     MutablePosition(next_positions, card) = Tableau{tableau.column, tableau.number, true};
     return Klondike{std::move(next_positions)};
 }
@@ -524,7 +545,7 @@ Klondike Klondike::draw(const card_type& card) const {
         next_positions.begin(),
         next_positions.end(),
         [](const auto& pair) {
-            return std::holds_alternative<WastePile>(pair.second);
+            return HoldsAlternative<WastePile>(pair.second);
         });
 
     MutablePosition(next_positions, card) = WastePile{static_cast<int>(waste_count)};
@@ -537,16 +558,16 @@ bool Klondike::can_move_to_foundation(const card_type& card) const {
     if (card.rank() != Rank::Ace) {
         const auto previous_card = PreviousRankCard(card);
         if (!previous_card.has_value()
-            || !std::holds_alternative<Foundation>(position_of(*previous_card))) {
+            || !HoldsAlternative<Foundation>(position_of(*previous_card))) {
             return false;
         }
     }
 
-    if (const auto* waste = std::get_if<WastePile>(&position); waste != nullptr) {
+    if (const auto* waste = GetIf<WastePile>(&position); waste != nullptr) {
         return IsTopWasteCard(positions_, card);
     }
 
-    if (const auto* tableau = std::get_if<Tableau>(&position); tableau != nullptr) {
+    if (const auto* tableau = GetIf<Tableau>(&position); tableau != nullptr) {
         return tableau->open && IsTopTableauCard(positions_, card);
     }
 
@@ -568,14 +589,14 @@ bool Klondike::can_redeal() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Stock>(pair.second);
+            return HoldsAlternative<Stock>(pair.second);
         });
 
     const auto has_waste = std::any_of(
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<WastePile>(pair.second);
+            return HoldsAlternative<WastePile>(pair.second);
         });
 
     return !has_stock && has_waste;
@@ -587,26 +608,26 @@ Klondike Klondike::redeal() const {
     }
 
     auto next_positions = positions_;
-    std::vector<std::pair<int, Card>> waste_cards;
-    waste_cards.reserve(next_positions.size());
+    std::array<std::optional<Card>, kStandardDeckSize> waste_cards{};
+    std::size_t waste_card_count = 0;
 
     for (const auto& [card, position] : next_positions) {
-        if (const auto* waste = std::get_if<WastePile>(&position); waste != nullptr) {
-            waste_cards.emplace_back(waste->number, card);
+        if (const auto* waste = GetIf<WastePile>(&position); waste != nullptr) {
+            const auto index = static_cast<std::size_t>(waste->number);
+            waste_cards[index] = card;
+            if (waste_card_count <= index) {
+                waste_card_count = index + 1;
+            }
         }
     }
 
-    std::sort(
-        waste_cards.begin(),
-        waste_cards.end(),
-        [](const auto& lhs, const auto& rhs) {
-            return lhs.first > rhs.first;
-        });
-
     int stock_number = 0;
-    for (const auto& [waste_number, card] : waste_cards) {
-        (void)waste_number;
-        MutablePosition(next_positions, card) = Stock{stock_number++};
+    for (std::size_t i = waste_card_count; i > 0; --i) {
+        if (!waste_cards[i - 1].has_value()) {
+            continue;
+        }
+
+        MutablePosition(next_positions, *waste_cards[i - 1]) = Stock{stock_number++};
     }
 
     return Klondike{std::move(next_positions)};
@@ -622,7 +643,7 @@ bool Klondike::can_move_to_tableau(const card_type& card, const Column column) c
         return card.rank() == Rank::King;
     }
 
-    const auto* destination_top_tableau = std::get_if<Tableau>(&position_of(*destination_top));
+    const auto* destination_top_tableau = GetIf<Tableau>(&position_of(*destination_top));
     if (destination_top_tableau == nullptr || !destination_top_tableau->open) {
         return false;
     }
@@ -639,11 +660,10 @@ Klondike Klondike::move_to_tableau(const card_type& card, const Column column) c
     auto destination_count = static_cast<int>(TableauCount(next_positions, column));
 
     const auto& position = position_of(card);
-    if (std::holds_alternative<Tableau>(position)) {
+    if (HoldsAlternative<Tableau>(position)) {
         const auto stack = OrderedTableauStack(next_positions, card);
-        for (const auto& [unused_number, current_card] : stack) {
-            (void)unused_number;
-            MutablePosition(next_positions, current_card) = Tableau{column, destination_count++, true};
+        for (std::size_t i = 0; i < stack.size; ++i) {
+            MutablePosition(next_positions, *stack.cards[i]) = Tableau{column, destination_count++, true};
         }
     } else {
         MutablePosition(next_positions, card) = Tableau{column, destination_count, true};

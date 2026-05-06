@@ -3,11 +3,10 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <stdexcept>
-#include <unordered_set>
 #include <utility>
-#include <vector>
 
 #include "shlab/gopc/playing_cards/rank.hpp"
 #include "shlab/gopc/playing_cards/suit.hpp"
@@ -28,6 +27,55 @@ constexpr std::array kColumns{
     Column::Second,
     Column::Third,
     Column::Fourth,
+};
+
+[[noreturn]] void ThrowInvalidState(const char* message);
+[[noreturn]] void ThrowInvalidMove(const char* message);
+
+struct OrderedCardList {
+    std::array<std::optional<Card>, kStandardDeckSize> cards{};
+    std::size_t size{};
+
+    [[nodiscard]] bool empty() const noexcept {
+        return size == 0;
+    }
+};
+
+struct DrawCards {
+    std::array<std::optional<Card>, kDrawCount> cards{};
+    std::array<int, kDrawCount> numbers{{
+        -1,
+        -1,
+        -1,
+    }};
+    std::size_t size{};
+};
+
+struct ContiguousNumbers {
+    std::array<bool, kStandardDeckSize> occupied{};
+    std::size_t count{};
+
+    void add(const int number, const char* negative_message) {
+        if (number < 0) {
+            ThrowInvalidState(negative_message);
+        }
+
+        const auto index = static_cast<std::size_t>(number);
+        if (index >= occupied.size()) {
+            ThrowInvalidState(negative_message);
+        }
+
+        occupied[index] = true;
+        ++count;
+    }
+
+    void validate(const char* message) const {
+        for (std::size_t i = 0; i < count; ++i) {
+            if (!occupied[i]) {
+                ThrowInvalidState(message);
+            }
+        }
+    }
 };
 
 [[noreturn]] void ThrowInvalidState(const char* message) {
@@ -85,7 +133,7 @@ auto MutablePosition(Canfield::state_type& positions, const Card& card) -> Posit
 std::optional<Card> TopReserveCard(const Canfield::state_type& positions) {
     std::optional<std::pair<int, Card>> result;
     for (const auto& [card, position] : positions) {
-        if (const auto* reserve = std::get_if<Reserve>(&position); reserve != nullptr) {
+        if (const auto* reserve = GetIf<Reserve>(&position); reserve != nullptr) {
             if (!result.has_value() || result->first < reserve->number) {
                 result = std::pair{reserve->number, card};
             }
@@ -102,7 +150,7 @@ std::optional<Card> TopReserveCard(const Canfield::state_type& positions) {
 std::optional<Card> TopWasteCard(const Canfield::state_type& positions) {
     std::optional<std::pair<int, Card>> result;
     for (const auto& [card, position] : positions) {
-        if (const auto* waste = std::get_if<WastePile>(&position); waste != nullptr) {
+        if (const auto* waste = GetIf<WastePile>(&position); waste != nullptr) {
             if (!result.has_value() || result->first < waste->number) {
                 result = std::pair{waste->number, card};
             }
@@ -116,25 +164,31 @@ std::optional<Card> TopWasteCard(const Canfield::state_type& positions) {
     return result->second;
 }
 
-std::vector<std::pair<int, Card>> TopStockCards(
+DrawCards TopStockCards(
     const Canfield::state_type& positions,
     const int draw_count) {
-    std::vector<std::pair<int, Card>> stock_cards;
+    DrawCards stock_cards;
     for (const auto& [card, position] : positions) {
-        if (const auto* stock = std::get_if<Stock>(&position); stock != nullptr) {
-            stock_cards.emplace_back(stock->number, card);
+        if (const auto* stock = GetIf<Stock>(&position); stock != nullptr) {
+            auto insert_index = stock_cards.size;
+            while (insert_index > 0 && stock_cards.numbers[insert_index - 1] < stock->number) {
+                if (insert_index < static_cast<std::size_t>(draw_count)) {
+                    stock_cards.numbers[insert_index] = stock_cards.numbers[insert_index - 1];
+                    stock_cards.cards[insert_index] = stock_cards.cards[insert_index - 1];
+                }
+                --insert_index;
+            }
+
+            if (insert_index >= static_cast<std::size_t>(draw_count)) {
+                continue;
+            }
+
+            stock_cards.numbers[insert_index] = stock->number;
+            stock_cards.cards[insert_index] = card;
+            if (stock_cards.size < static_cast<std::size_t>(draw_count)) {
+                ++stock_cards.size;
+            }
         }
-    }
-
-    std::sort(
-        stock_cards.begin(),
-        stock_cards.end(),
-        [](const auto& lhs, const auto& rhs) {
-            return lhs.first > rhs.first;
-        });
-
-    if (stock_cards.size() > static_cast<std::size_t>(draw_count)) {
-        stock_cards.erase(stock_cards.begin() + draw_count, stock_cards.end());
     }
 
     return stock_cards;
@@ -143,7 +197,7 @@ std::vector<std::pair<int, Card>> TopStockCards(
 std::optional<Card> TableauTopCard(const Canfield::state_type& positions, const Column column) {
     std::optional<std::pair<int, Card>> result;
     for (const auto& [card, position] : positions) {
-        if (const auto* tableau = std::get_if<Tableau>(&position);
+        if (const auto* tableau = GetIf<Tableau>(&position);
             tableau != nullptr && tableau->column == column) {
             if (!result.has_value() || result->first < tableau->number) {
                 result = std::pair{tableau->number, card};
@@ -163,28 +217,25 @@ std::size_t TableauCount(const Canfield::state_type& positions, const Column col
         positions.begin(),
         positions.end(),
         [column](const auto& pair) {
-            const auto* tableau = std::get_if<Tableau>(&pair.second);
+            const auto* tableau = GetIf<Tableau>(&pair.second);
             return tableau != nullptr && tableau->column == column;
         });
 }
 
-std::vector<std::pair<int, Card>> OrderedTableauColumn(
+OrderedCardList OrderedTableauColumn(
     const Canfield::state_type& positions,
     const Column column) {
-    std::vector<std::pair<int, Card>> stack;
+    OrderedCardList stack;
     for (const auto& [card, position] : positions) {
-        if (const auto* tableau = std::get_if<Tableau>(&position);
+        if (const auto* tableau = GetIf<Tableau>(&position);
             tableau != nullptr && tableau->column == column) {
-            stack.emplace_back(tableau->number, card);
+            const auto index = static_cast<std::size_t>(tableau->number);
+            stack.cards[index] = card;
+            if (stack.size <= index) {
+                stack.size = index + 1;
+            }
         }
     }
-
-    std::sort(
-        stack.begin(),
-        stack.end(),
-        [](const auto& lhs, const auto& rhs) {
-            return lhs.first < rhs.first;
-        });
 
     return stack;
 }
@@ -197,9 +248,9 @@ bool HasValidWholeTableauSequence(
         return false;
     }
 
-    auto previous = stack.front().second;
-    for (std::size_t i = 1; i < stack.size(); ++i) {
-        const auto current = stack[i].second;
+    auto previous = *stack.cards[0];
+    for (std::size_t i = 1; i < stack.size; ++i) {
+        const auto current = *stack.cards[i];
         if (!CanBuildOnTableau(current, previous)) {
             return false;
         }
@@ -209,17 +260,20 @@ bool HasValidWholeTableauSequence(
     return true;
 }
 
-std::vector<std::pair<int, Card>> MovableTableauStack(
+OrderedCardList MovableTableauStack(
     const Canfield::state_type& positions,
     const Card& card) {
-    const auto* tableau = std::get_if<Tableau>(&LookupPosition(positions, card));
+    const auto* tableau = GetIf<Tableau>(&LookupPosition(positions, card));
     if (tableau == nullptr) {
         return {};
     }
 
     const auto top = TableauTopCard(positions, tableau->column);
     if (top.has_value() && *top == card) {
-        return {{tableau->number, card}};
+        OrderedCardList stack;
+        stack.cards[0] = card;
+        stack.size = 1;
+        return stack;
     }
 
     if (tableau->number == 0 && HasValidWholeTableauSequence(positions, tableau->column)) {
@@ -235,7 +289,7 @@ std::optional<Rank> NextFoundationRankForSuit(
     const Suit suit) {
     std::size_t count = 0;
     for (const auto& [card, position] : positions) {
-        if (card.suit() == suit && std::holds_alternative<Foundation>(position)) {
+        if (card.suit() == suit && HoldsAlternative<Foundation>(position)) {
             ++count;
         }
     }
@@ -283,78 +337,52 @@ void ValidateCardSet(const Canfield::state_type& positions) {
     }
 }
 
-void ValidateNumberedPile(
-    const std::vector<int>& numbers,
-    const char* message) {
-    for (std::size_t i = 0; i < numbers.size(); ++i) {
-        if (numbers[i] != static_cast<int>(i)) {
-            ThrowInvalidState(message);
-        }
-    }
-}
-
 void ValidateStockWasteReserve(const Canfield::state_type& positions) {
-    std::vector<int> stock_numbers;
-    std::vector<int> waste_numbers;
-    std::vector<int> reserve_numbers;
+    ContiguousNumbers stock_numbers;
+    ContiguousNumbers waste_numbers;
+    ContiguousNumbers reserve_numbers;
 
     for (const auto& [card, position] : positions) {
         (void)card;
 
-        if (const auto* stock = std::get_if<Stock>(&position); stock != nullptr) {
-            if (stock->number < 0) {
-                ThrowInvalidState("Stock positions must use non-negative indices.");
-            }
-            stock_numbers.push_back(stock->number);
-        } else if (const auto* waste = std::get_if<WastePile>(&position); waste != nullptr) {
-            if (waste->number < 0) {
-                ThrowInvalidState("Waste positions must use non-negative indices.");
-            }
-            waste_numbers.push_back(waste->number);
-        } else if (const auto* reserve = std::get_if<Reserve>(&position); reserve != nullptr) {
-            if (reserve->number < 0) {
-                ThrowInvalidState("Reserve positions must use non-negative indices.");
-            }
-            reserve_numbers.push_back(reserve->number);
+        if (const auto* stock = GetIf<Stock>(&position); stock != nullptr) {
+            stock_numbers.add(stock->number, "Stock positions must use non-negative indices.");
+        } else if (const auto* waste = GetIf<WastePile>(&position); waste != nullptr) {
+            waste_numbers.add(waste->number, "Waste positions must use non-negative indices.");
+        } else if (const auto* reserve = GetIf<Reserve>(&position); reserve != nullptr) {
+            reserve_numbers.add(reserve->number, "Reserve positions must use non-negative indices.");
         }
     }
 
-    std::sort(stock_numbers.begin(), stock_numbers.end());
-    std::sort(waste_numbers.begin(), waste_numbers.end());
-    std::sort(reserve_numbers.begin(), reserve_numbers.end());
-
-    ValidateNumberedPile(stock_numbers, "Stock positions must be contiguous from zero.");
-    ValidateNumberedPile(waste_numbers, "Waste positions must be contiguous from zero.");
-    ValidateNumberedPile(reserve_numbers, "Reserve positions must be contiguous from zero.");
+    stock_numbers.validate("Stock positions must be contiguous from zero.");
+    waste_numbers.validate("Waste positions must be contiguous from zero.");
+    reserve_numbers.validate("Reserve positions must be contiguous from zero.");
 }
 
 void ValidateTableau(
     const Canfield::state_type& positions,
     const bool reserve_must_fill_empty) {
-    std::array<std::vector<int>, kTableauColumnCount> columns;
+    std::array<ContiguousNumbers, kTableauColumnCount> columns;
 
     for (const auto& [card, position] : positions) {
         (void)card;
 
-        if (const auto* tableau = std::get_if<Tableau>(&position); tableau != nullptr) {
-            if (tableau->number < 0) {
-                ThrowInvalidState("Tableau positions must use non-negative indices.");
-            }
-
+        if (const auto* tableau = GetIf<Tableau>(&position); tableau != nullptr) {
             const auto column_index = ToInt(tableau->column);
             if (column_index < 0 || column_index >= kTableauColumnCount) {
                 ThrowInvalidState("Tableau column is out of range.");
             }
 
-            columns[static_cast<std::size_t>(column_index)].push_back(tableau->number);
+            columns[static_cast<std::size_t>(column_index)].add(
+                tableau->number,
+                "Tableau positions must use non-negative indices.");
         }
     }
 
     for (auto& column : columns) {
-        std::sort(column.begin(), column.end());
-        ValidateNumberedPile(column, "Tableau positions must be contiguous within each column.");
+        column.validate("Tableau positions must be contiguous within each column.");
 
-        if (reserve_must_fill_empty && column.empty()) {
+        if (reserve_must_fill_empty && column.count == 0) {
             ThrowInvalidState("Empty tableau columns must be filled from reserve while reserve remains.");
         }
     }
@@ -380,32 +408,24 @@ std::size_t SuitIndex(const Suit suit) {
 void ValidateFoundation(
     const Canfield::state_type& positions,
     const Rank foundation_base_rank) {
-    std::array<std::vector<Rank>, 4> ranks_by_suit;
+    std::array<std::array<bool, 13>, 4> ranks_by_suit{};
+    std::array<std::size_t, 4> suit_counts{};
 
     for (const auto& [card, position] : positions) {
-        if (std::holds_alternative<Foundation>(position)) {
-            ranks_by_suit[SuitIndex(card.suit())].push_back(card.rank());
+        if (HoldsAlternative<Foundation>(position)) {
+            auto rank_index = 0;
+            while (AdvanceRank(foundation_base_rank, rank_index) != card.rank()) {
+                ++rank_index;
+            }
+
+            ranks_by_suit[SuitIndex(card.suit())][static_cast<std::size_t>(rank_index)] = true;
+            ++suit_counts[SuitIndex(card.suit())];
         }
     }
 
-    for (auto& ranks : ranks_by_suit) {
-        std::sort(
-            ranks.begin(),
-            ranks.end(),
-            [&](const Rank lhs, const Rank rhs) {
-                auto lhs_index = 0;
-                auto rhs_index = 0;
-                while (AdvanceRank(foundation_base_rank, lhs_index) != lhs) {
-                    ++lhs_index;
-                }
-                while (AdvanceRank(foundation_base_rank, rhs_index) != rhs) {
-                    ++rhs_index;
-                }
-                return lhs_index < rhs_index;
-            });
-
-        for (std::size_t i = 0; i < ranks.size(); ++i) {
-            if (ranks[i] != AdvanceRank(foundation_base_rank, static_cast<int>(i))) {
+    for (std::size_t suit_index = 0; suit_index < ranks_by_suit.size(); ++suit_index) {
+        for (std::size_t i = 0; i < suit_counts[suit_index]; ++i) {
+            if (!ranks_by_suit[suit_index][i]) {
                 ThrowInvalidState("Foundation cards must follow the Canfield base-rank sequence.");
             }
         }
@@ -440,16 +460,18 @@ Canfield Canfield::deal(std::span<const card_type> deck) {
 
     state_type positions;
     positions.reserve(deck.size());
-    std::unordered_set<Card> seen;
-    seen.reserve(deck.size());
+    std::array<bool, 256> seen{};
 
     for (const auto& card : deck) {
         if (!card.is_standard_card()) {
             ThrowInvalidState("Canfield deals require standard cards only.");
         }
-        if (!seen.insert(card).second) {
+
+        const auto index = static_cast<std::uint8_t>(card.id());
+        if (seen[index]) {
             ThrowInvalidState("Canfield deals require 52 distinct cards.");
         }
+        seen[index] = true;
     }
 
     std::size_t deck_index = 0;
@@ -493,7 +515,7 @@ std::size_t Canfield::stock_count() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Stock>(pair.second);
+            return HoldsAlternative<Stock>(pair.second);
         });
 }
 
@@ -502,7 +524,7 @@ std::size_t Canfield::waste_count() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<WastePile>(pair.second);
+            return HoldsAlternative<WastePile>(pair.second);
         });
 }
 
@@ -511,7 +533,7 @@ std::size_t Canfield::reserve_count() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Reserve>(pair.second);
+            return HoldsAlternative<Reserve>(pair.second);
         });
 }
 
@@ -520,7 +542,7 @@ bool Canfield::is_win() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Foundation>(pair.second);
+            return HoldsAlternative<Foundation>(pair.second);
         });
 }
 
@@ -537,9 +559,8 @@ Canfield Canfield::draw() const {
     const auto cards_to_draw = TopStockCards(next_positions, kDrawCount);
     auto next_waste_number = static_cast<int>(waste_count());
 
-    for (const auto& [unused_stock_number, card] : cards_to_draw) {
-        (void)unused_stock_number;
-        MutablePosition(next_positions, card) = WastePile{next_waste_number++};
+    for (std::size_t i = 0; i < cards_to_draw.size; ++i) {
+        MutablePosition(next_positions, *cards_to_draw.cards[i]) = WastePile{next_waste_number++};
     }
 
     return Canfield{std::move(next_positions), foundation_base_rank_};
@@ -555,26 +576,26 @@ Canfield Canfield::redeal() const {
     }
 
     auto next_positions = positions_;
-    std::vector<std::pair<int, Card>> waste_cards;
-    waste_cards.reserve(next_positions.size());
+    std::array<std::optional<Card>, kStandardDeckSize> waste_cards{};
+    std::size_t waste_card_count = 0;
 
     for (const auto& [card, position] : next_positions) {
-        if (const auto* waste = std::get_if<WastePile>(&position); waste != nullptr) {
-            waste_cards.emplace_back(waste->number, card);
+        if (const auto* waste = GetIf<WastePile>(&position); waste != nullptr) {
+            const auto index = static_cast<std::size_t>(waste->number);
+            waste_cards[index] = card;
+            if (waste_card_count <= index) {
+                waste_card_count = index + 1;
+            }
         }
     }
 
-    std::sort(
-        waste_cards.begin(),
-        waste_cards.end(),
-        [](const auto& lhs, const auto& rhs) {
-            return lhs.first > rhs.first;
-        });
-
     int stock_number = 0;
-    for (const auto& [unused_waste_number, card] : waste_cards) {
-        (void)unused_waste_number;
-        MutablePosition(next_positions, card) = Stock{stock_number++};
+    for (std::size_t i = waste_card_count; i > 0; --i) {
+        if (!waste_cards[i - 1].has_value()) {
+            continue;
+        }
+
+        MutablePosition(next_positions, *waste_cards[i - 1]) = Stock{stock_number++};
     }
 
     return Canfield{std::move(next_positions), foundation_base_rank_};
@@ -594,7 +615,7 @@ bool Canfield::can_move_to_foundation(const card_type& card) const {
         return next_rank.has_value() && *next_rank == card.rank();
     }
 
-    const auto* tableau = std::get_if<Tableau>(&position_of(card));
+    const auto* tableau = GetIf<Tableau>(&position_of(card));
     if (tableau != nullptr) {
         const auto top = TableauTopCard(positions_, tableau->column);
         const auto next_rank = NextFoundationRankForSuit(positions_, foundation_base_rank_, card.suit());
@@ -613,7 +634,7 @@ Canfield Canfield::move_to_foundation(const card_type& card) const {
     const auto source_position = position_of(card);
     MutablePosition(next_positions, card) = Foundation{};
 
-    if (std::holds_alternative<Tableau>(source_position)) {
+    if (HoldsAlternative<Tableau>(source_position)) {
         AutoFillEmptyTableauFromReserve(next_positions);
     }
 
@@ -637,7 +658,7 @@ bool Canfield::can_move_to_tableau(const card_type& card, const Column column) c
         return false;
     }
 
-    if (const auto* source_tableau = std::get_if<Tableau>(&position_of(card));
+    if (const auto* source_tableau = GetIf<Tableau>(&position_of(card));
         source_tableau != nullptr && source_tableau->column == column) {
         return false;
     }
@@ -666,9 +687,8 @@ Canfield Canfield::move_to_tableau(const card_type& card, const Column column) c
         MutablePosition(next_positions, card) = Tableau{column, destination_count};
     } else {
         const auto stack = MovableTableauStack(next_positions, card);
-        for (const auto& [unused_number, current_card] : stack) {
-            (void)unused_number;
-            MutablePosition(next_positions, current_card) = Tableau{column, destination_count++};
+        for (std::size_t i = 0; i < stack.size; ++i) {
+            MutablePosition(next_positions, *stack.cards[i]) = Tableau{column, destination_count++};
         }
         AutoFillEmptyTableauFromReserve(next_positions);
         return Canfield{std::move(next_positions), foundation_base_rank_};

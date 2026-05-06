@@ -115,10 +115,10 @@ void TestDealBuildsInitialState() {
     CheckEqual(game.stock_count(), std::size_t{32}, "Deal leaves 32 cards in stock");
     Check(!game.is_win(), "Initial deal is not a win");
 
-    CheckEqual(std::get<Field>(game.position_of(deck[0])), Field{0}, "First card starts in the top-left field slot");
-    CheckEqual(std::get<Field>(game.position_of(deck[15])), Field{15}, "Sixteenth card ends the 4x4 field");
-    CheckEqual(std::get<Stock>(game.position_of(deck[16])), Stock{0}, "Seventeenth card becomes the first stock card");
-    CheckEqual(std::get<Stock>(game.position_of(deck[47])), Stock{31}, "Last card becomes the last stock card");
+    CheckEqual(Get<Field>(game.position_of(deck[0])), Field{0}, "First card starts in the top-left field slot");
+    CheckEqual(Get<Field>(game.position_of(deck[15])), Field{15}, "Sixteenth card ends the 4x4 field");
+    CheckEqual(Get<Stock>(game.position_of(deck[16])), Stock{0}, "Seventeenth card becomes the first stock card");
+    CheckEqual(Get<Stock>(game.position_of(deck[47])), Stock{31}, "Last card becomes the last stock card");
 }
 
 void TestRemoveSameSuitSumFifteenRefillsInFieldOrder() {
@@ -169,12 +169,12 @@ void TestRemoveSameSuitSumFifteenRefillsInFieldOrder() {
 
     const auto next = game.remove(selection);
 
-    Check(std::holds_alternative<Removed>(next.position_of(six)), "Removed numeric card leaves the field");
-    Check(std::holds_alternative<Removed>(next.position_of(nine)), "Second removed numeric card leaves the field");
-    CheckEqual(std::get<Field>(next.position_of(refill_first)), Field{2}, "First stock card refills the first empty field slot");
-    CheckEqual(std::get<Field>(next.position_of(refill_second)), Field{5}, "Second stock card refills the next empty field slot");
-    CheckEqual(std::get<Stock>(next.position_of(stock_tail)), Stock{0}, "Remaining stock is renumbered after refill");
-    CheckEqual(std::get<Field>(game.position_of(six)), Field{5}, "Original state stays unchanged after removal");
+    Check(HoldsAlternative<Removed>(next.position_of(six)), "Removed numeric card leaves the field");
+    Check(HoldsAlternative<Removed>(next.position_of(nine)), "Second removed numeric card leaves the field");
+    CheckEqual(Get<Field>(next.position_of(refill_first)), Field{2}, "First stock card refills the first empty field slot");
+    CheckEqual(Get<Field>(next.position_of(refill_second)), Field{5}, "Second stock card refills the next empty field slot");
+    CheckEqual(Get<Stock>(next.position_of(stock_tail)), Stock{0}, "Remaining stock is renumbered after refill");
+    CheckEqual(Get<Field>(game.position_of(six)), Field{5}, "Original state stays unchanged after removal");
 }
 
 void TestRemoveThreeNumericCardsSummingFifteen() {
@@ -205,9 +205,9 @@ void TestRemoveJackQueenKingSet() {
     Check(game.can_remove(selection), "Same-suit JQK can be removed together");
 
     const auto next = game.remove(selection);
-    Check(std::holds_alternative<Removed>(next.position_of(jack)), "Removed jack moves to Removed");
-    Check(std::holds_alternative<Removed>(next.position_of(queen)), "Removed queen moves to Removed");
-    Check(std::holds_alternative<Removed>(next.position_of(king)), "Removed king moves to Removed");
+    Check(HoldsAlternative<Removed>(next.position_of(jack)), "Removed jack moves to Removed");
+    Check(HoldsAlternative<Removed>(next.position_of(queen)), "Removed queen moves to Removed");
+    Check(HoldsAlternative<Removed>(next.position_of(king)), "Removed king moves to Removed");
 }
 
 void TestIllegalRemovalsAndThrows() {
