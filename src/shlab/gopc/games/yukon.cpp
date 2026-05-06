@@ -82,7 +82,7 @@ auto MutablePosition(Yukon::state_type& positions, const Card& card) -> Position
 }
 
 bool IsTopTableauCard(const Yukon::state_type& positions, const Card& card) {
-    const auto* tableau = std::get_if<Tableau>(&LookupPosition(positions, card));
+    const auto* tableau = GetIf<Tableau>(&LookupPosition(positions, card));
     if (tableau == nullptr) {
         return false;
     }
@@ -90,7 +90,7 @@ bool IsTopTableauCard(const Yukon::state_type& positions, const Card& card) {
     for (const auto& [other_card, position] : positions) {
         (void)other_card;
 
-        if (const auto* other_tableau = std::get_if<Tableau>(&position);
+        if (const auto* other_tableau = GetIf<Tableau>(&position);
             other_tableau != nullptr
             && other_tableau->column == tableau->column
             && other_tableau->number > tableau->number) {
@@ -102,7 +102,7 @@ bool IsTopTableauCard(const Yukon::state_type& positions, const Card& card) {
 }
 
 bool IsTopFoundationCard(const Yukon::state_type& positions, const Card& card) {
-    if (!std::holds_alternative<Foundation>(LookupPosition(positions, card))) {
+    if (!HoldsAlternative<Foundation>(LookupPosition(positions, card))) {
         return false;
     }
 
@@ -112,7 +112,7 @@ bool IsTopFoundationCard(const Yukon::state_type& positions, const Card& card) {
 
     const auto next_card = Card::try_of(card.suit(), static_cast<Rank>(ToInt(card.rank()) + 1));
     return !next_card.has_value()
-        || !std::holds_alternative<Foundation>(LookupPosition(positions, *next_card));
+        || !HoldsAlternative<Foundation>(LookupPosition(positions, *next_card));
 }
 
 std::size_t TableauCount(const Yukon::state_type& positions, const Column column) noexcept {
@@ -120,7 +120,7 @@ std::size_t TableauCount(const Yukon::state_type& positions, const Column column
         positions.begin(),
         positions.end(),
         [column](const auto& pair) {
-            const auto* tableau = std::get_if<Tableau>(&pair.second);
+            const auto* tableau = GetIf<Tableau>(&pair.second);
             return tableau != nullptr && tableau->column == column;
         });
 }
@@ -129,7 +129,7 @@ std::optional<Card> TableauTopCard(const Yukon::state_type& positions, const Col
     std::optional<std::pair<int, Card>> result;
 
     for (const auto& [card, position] : positions) {
-        if (const auto* tableau = std::get_if<Tableau>(&position);
+        if (const auto* tableau = GetIf<Tableau>(&position);
             tableau != nullptr && tableau->column == column) {
             if (!result.has_value() || result->first < tableau->number) {
                 result = std::pair{tableau->number, card};
@@ -147,14 +147,14 @@ std::optional<Card> TableauTopCard(const Yukon::state_type& positions, const Col
 std::vector<std::pair<int, Card>> OrderedTableauTail(
     const Yukon::state_type& positions,
     const Card& card) {
-    const auto* tableau = std::get_if<Tableau>(&LookupPosition(positions, card));
+    const auto* tableau = GetIf<Tableau>(&LookupPosition(positions, card));
     if (tableau == nullptr) {
         return {};
     }
 
     std::vector<std::pair<int, Card>> stack;
     for (const auto& [candidate_card, position] : positions) {
-        if (const auto* candidate = std::get_if<Tableau>(&position);
+        if (const auto* candidate = GetIf<Tableau>(&position);
             candidate != nullptr
             && candidate->column == tableau->column
             && candidate->number >= tableau->number) {
@@ -192,7 +192,7 @@ void ValidateTableau(const Yukon::state_type& positions) {
     for (const auto& [card, position] : positions) {
         (void)card;
 
-        if (const auto* tableau = std::get_if<Tableau>(&position); tableau != nullptr) {
+        if (const auto* tableau = GetIf<Tableau>(&position); tableau != nullptr) {
             if (tableau->number < 0) {
                 ThrowInvalidState("Tableau positions must use non-negative indices.");
             }
@@ -250,7 +250,7 @@ void ValidateFoundation(const Yukon::state_type& positions) {
     std::array<std::vector<int>, 4> ranks_by_suit;
 
     for (const auto& [card, position] : positions) {
-        if (std::holds_alternative<Foundation>(position)) {
+        if (HoldsAlternative<Foundation>(position)) {
             ranks_by_suit[SuitIndex(card.suit())].push_back(ToInt(card.rank()));
         }
     }
@@ -336,7 +336,7 @@ bool Yukon::is_win() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Foundation>(pair.second);
+            return HoldsAlternative<Foundation>(pair.second);
         });
 }
 
@@ -355,12 +355,12 @@ bool Yukon::is_moved_foundation_no_problem(const card_type& card) const {
         positions_.end(),
         [previous_rank](const auto& pair) {
             return pair.first.rank() != previous_rank
-                || std::holds_alternative<Foundation>(pair.second);
+                || HoldsAlternative<Foundation>(pair.second);
         });
 }
 
 bool Yukon::can_open(const card_type& card) const {
-    const auto* tableau = std::get_if<Tableau>(&position_of(card));
+    const auto* tableau = GetIf<Tableau>(&position_of(card));
     return tableau != nullptr && !tableau->open && IsTopTableauCard(positions_, card);
 }
 
@@ -370,13 +370,13 @@ Yukon Yukon::open(const card_type& card) const {
     }
 
     auto next_positions = positions_;
-    const auto tableau = std::get<Tableau>(position_of(card));
+    const auto tableau = Get<Tableau>(position_of(card));
     MutablePosition(next_positions, card) = Tableau{tableau.column, tableau.number, true};
     return Yukon{std::move(next_positions)};
 }
 
 bool Yukon::can_move_to_foundation(const card_type& card) const {
-    const auto* tableau = std::get_if<Tableau>(&position_of(card));
+    const auto* tableau = GetIf<Tableau>(&position_of(card));
     if (tableau == nullptr || !tableau->open || !IsTopTableauCard(positions_, card)) {
         return false;
     }
@@ -386,7 +386,7 @@ bool Yukon::can_move_to_foundation(const card_type& card) const {
     }
 
     const auto previous_card = PreviousRankCard(card);
-    return previous_card.has_value() && std::holds_alternative<Foundation>(position_of(*previous_card));
+    return previous_card.has_value() && HoldsAlternative<Foundation>(position_of(*previous_card));
 }
 
 Yukon Yukon::move_to_foundation(const card_type& card) const {
@@ -400,7 +400,7 @@ Yukon Yukon::move_to_foundation(const card_type& card) const {
 }
 
 bool Yukon::can_move_to_tableau(const card_type& card, const Column column) const {
-    const auto* tableau = std::get_if<Tableau>(&position_of(card));
+    const auto* tableau = GetIf<Tableau>(&position_of(card));
     if (tableau == nullptr || !tableau->open || tableau->column == column) {
         return false;
     }
@@ -410,7 +410,7 @@ bool Yukon::can_move_to_tableau(const card_type& card, const Column column) cons
         return card.rank() == Rank::King;
     }
 
-    const auto* destination_top_tableau = std::get_if<Tableau>(&position_of(*destination_top));
+    const auto* destination_top_tableau = GetIf<Tableau>(&position_of(*destination_top));
     if (destination_top_tableau == nullptr || !destination_top_tableau->open) {
         return false;
     }

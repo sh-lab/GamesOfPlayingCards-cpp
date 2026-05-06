@@ -70,7 +70,7 @@ Card TopHandCard(const Golf::state_type& positions) {
     std::optional<std::pair<int, Card>> result;
 
     for (const auto& [card, position] : positions) {
-        if (const auto* hand = std::get_if<Hand>(&position); hand != nullptr) {
+        if (const auto* hand = GetIf<Hand>(&position); hand != nullptr) {
             if (!result.has_value() || result->first < hand->number) {
                 result = std::pair{hand->number, card};
             }
@@ -85,11 +85,11 @@ Card TopHandCard(const Golf::state_type& positions) {
 }
 
 int TopHandNumber(const Golf::state_type& positions) {
-    return std::get<Hand>(LookupPosition(positions, TopHandCard(positions))).number;
+    return Get<Hand>(LookupPosition(positions, TopHandCard(positions))).number;
 }
 
 bool IsTopDeckCard(const Golf::state_type& positions, const Card& card) {
-    const auto* deck = std::get_if<Deck>(&LookupPosition(positions, card));
+    const auto* deck = GetIf<Deck>(&LookupPosition(positions, card));
     if (deck == nullptr) {
         return false;
     }
@@ -97,7 +97,7 @@ bool IsTopDeckCard(const Golf::state_type& positions, const Card& card) {
     for (const auto& [other_card, position] : positions) {
         (void)other_card;
 
-        if (const auto* other_deck = std::get_if<Deck>(&position);
+        if (const auto* other_deck = GetIf<Deck>(&position);
             other_deck != nullptr && other_deck->number > deck->number) {
             return false;
         }
@@ -107,7 +107,7 @@ bool IsTopDeckCard(const Golf::state_type& positions, const Card& card) {
 }
 
 bool IsTopFieldCard(const Golf::state_type& positions, const Card& card) {
-    const auto* field = std::get_if<Field>(&LookupPosition(positions, card));
+    const auto* field = GetIf<Field>(&LookupPosition(positions, card));
     if (field == nullptr) {
         return false;
     }
@@ -115,7 +115,7 @@ bool IsTopFieldCard(const Golf::state_type& positions, const Card& card) {
     for (const auto& [other_card, position] : positions) {
         (void)other_card;
 
-        if (const auto* other_field = std::get_if<Field>(&position);
+        if (const auto* other_field = GetIf<Field>(&position);
             other_field != nullptr
             && other_field->lane == field->lane
             && other_field->number > field->number) {
@@ -199,12 +199,12 @@ void ValidateHandAndDeck(const Golf::state_type& positions) {
     for (const auto& [card, position] : positions) {
         (void)card;
 
-        if (const auto* hand = std::get_if<Hand>(&position); hand != nullptr) {
+        if (const auto* hand = GetIf<Hand>(&position); hand != nullptr) {
             if (hand->number < 0) {
                 ThrowInvalidState("Hand positions must use non-negative indices.");
             }
             hand_numbers.push_back(hand->number);
-        } else if (const auto* deck = std::get_if<Deck>(&position); deck != nullptr) {
+        } else if (const auto* deck = GetIf<Deck>(&position); deck != nullptr) {
             if (deck->number < 0) {
                 ThrowInvalidState("Deck positions must use non-negative indices.");
             }
@@ -229,7 +229,7 @@ void ValidateField(const Golf::state_type& positions) {
     for (const auto& [card, position] : positions) {
         (void)card;
 
-        if (const auto* field = std::get_if<Field>(&position); field != nullptr) {
+        if (const auto* field = GetIf<Field>(&position); field != nullptr) {
             if (field->number < 0) {
                 ThrowInvalidState("Field positions must use non-negative indices.");
             }
@@ -325,7 +325,7 @@ std::size_t Golf::deck_count() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Deck>(pair.second);
+            return HoldsAlternative<Deck>(pair.second);
         });
 }
 
@@ -334,7 +334,7 @@ bool Golf::is_win() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Field>(pair.second);
+            return HoldsAlternative<Field>(pair.second);
         });
 }
 

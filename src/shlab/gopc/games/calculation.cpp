@@ -84,7 +84,7 @@ std::size_t FoundationCount(
         positions.begin(),
         positions.end(),
         [column](const auto& pair) {
-            const auto* foundation = std::get_if<Foundation>(&pair.second);
+            const auto* foundation = GetIf<Foundation>(&pair.second);
             return foundation != nullptr && foundation->column == column;
         });
 }
@@ -106,12 +106,12 @@ bool HasWastePile(const Calculation::state_type& positions) noexcept {
         positions.begin(),
         positions.end(),
         [](const auto& pair) {
-            return std::holds_alternative<WastePile>(pair.second);
+            return HoldsAlternative<WastePile>(pair.second);
         });
 }
 
 bool IsTopStockCard(const Calculation::state_type& positions, const Card& card) {
-    const auto* stock = std::get_if<Stock>(&LookupPosition(positions, card));
+    const auto* stock = GetIf<Stock>(&LookupPosition(positions, card));
     if (stock == nullptr) {
         return false;
     }
@@ -119,7 +119,7 @@ bool IsTopStockCard(const Calculation::state_type& positions, const Card& card) 
     for (const auto& [other_card, position] : positions) {
         (void)other_card;
 
-        if (const auto* other_stock = std::get_if<Stock>(&position);
+        if (const auto* other_stock = GetIf<Stock>(&position);
             other_stock != nullptr && other_stock->number > stock->number) {
             return false;
         }
@@ -129,7 +129,7 @@ bool IsTopStockCard(const Calculation::state_type& positions, const Card& card) 
 }
 
 bool IsTopTableauCard(const Calculation::state_type& positions, const Card& card) {
-    const auto* tableau = std::get_if<Tableau>(&LookupPosition(positions, card));
+    const auto* tableau = GetIf<Tableau>(&LookupPosition(positions, card));
     if (tableau == nullptr) {
         return false;
     }
@@ -137,7 +137,7 @@ bool IsTopTableauCard(const Calculation::state_type& positions, const Card& card
     for (const auto& [other_card, position] : positions) {
         (void)other_card;
 
-        if (const auto* other_tableau = std::get_if<Tableau>(&position);
+        if (const auto* other_tableau = GetIf<Tableau>(&position);
             other_tableau != nullptr
             && other_tableau->column == tableau->column
             && other_tableau->number > tableau->number) {
@@ -168,7 +168,7 @@ void ValidateStock(const Calculation::state_type& positions) {
     for (const auto& [card, position] : positions) {
         (void)card;
 
-        if (const auto* stock = std::get_if<Stock>(&position); stock != nullptr) {
+        if (const auto* stock = GetIf<Stock>(&position); stock != nullptr) {
             if (stock->number < 0) {
                 ThrowInvalidState("Stock positions must use non-negative indices.");
             }
@@ -189,7 +189,7 @@ void ValidateWaste(const Calculation::state_type& positions) {
         positions.begin(),
         positions.end(),
         [](const auto& pair) {
-            return std::holds_alternative<WastePile>(pair.second);
+            return HoldsAlternative<WastePile>(pair.second);
         });
 
     if (waste_count > 1) {
@@ -203,7 +203,7 @@ void ValidateTableau(const Calculation::state_type& positions) {
     for (const auto& [card, position] : positions) {
         (void)card;
 
-        if (const auto* tableau = std::get_if<Tableau>(&position); tableau != nullptr) {
+        if (const auto* tableau = GetIf<Tableau>(&position); tableau != nullptr) {
             if (tableau->number < 0) {
                 ThrowInvalidState("Tableau positions must use non-negative indices.");
             }
@@ -231,7 +231,7 @@ void ValidateFoundation(const Calculation::state_type& positions) {
     std::array<std::vector<Card>, kFoundationColumnCount> foundations;
 
     for (const auto& [card, position] : positions) {
-        if (const auto* foundation = std::get_if<Foundation>(&position); foundation != nullptr) {
+        if (const auto* foundation = GetIf<Foundation>(&position); foundation != nullptr) {
             const auto column_index = ToInt(foundation->column);
             if (column_index < 0 || column_index >= kFoundationColumnCount) {
                 ThrowInvalidState("Foundation column is out of range.");
@@ -354,7 +354,7 @@ std::size_t Calculation::stock_count() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Stock>(pair.second);
+            return HoldsAlternative<Stock>(pair.second);
         });
 }
 
@@ -363,7 +363,7 @@ bool Calculation::is_win() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Foundation>(pair.second);
+            return HoldsAlternative<Foundation>(pair.second);
         });
 }
 
@@ -382,7 +382,7 @@ Calculation Calculation::draw(const card_type& card) const {
 }
 
 bool Calculation::can_move_to_tableau(const card_type& card) const {
-    return std::holds_alternative<WastePile>(position_of(card));
+    return HoldsAlternative<WastePile>(position_of(card));
 }
 
 Calculation Calculation::move_to_tableau(const card_type& card, const TableauColumn column) const {
@@ -395,7 +395,7 @@ Calculation Calculation::move_to_tableau(const card_type& card, const TableauCol
         next_positions.begin(),
         next_positions.end(),
         [column](const auto& pair) {
-            const auto* tableau = std::get_if<Tableau>(&pair.second);
+            const auto* tableau = GetIf<Tableau>(&pair.second);
             return tableau != nullptr && tableau->column == column;
         }));
     MutablePosition(next_positions, card) = Tableau{column, destination_count};
@@ -404,12 +404,12 @@ Calculation Calculation::move_to_tableau(const card_type& card, const TableauCol
 
 bool Calculation::can_move_to_foundation(const card_type& card, const FoundationColumn column) const {
     const auto& position = position_of(card);
-    if (std::holds_alternative<WastePile>(position)) {
+    if (HoldsAlternative<WastePile>(position)) {
         const auto next = next_rank(column);
         return next.has_value() && card.rank() == *next;
     }
 
-    if (std::holds_alternative<Tableau>(position) && IsTopTableauCard(positions_, card)) {
+    if (HoldsAlternative<Tableau>(position) && IsTopTableauCard(positions_, card)) {
         const auto next = next_rank(column);
         return next.has_value() && card.rank() == *next;
     }

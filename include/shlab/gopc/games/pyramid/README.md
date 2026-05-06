@@ -11,8 +11,8 @@
 
 ## 状態モデル
 
-- `Pyramid::state_type` は `std::unordered_map<Card, Position>`
-- `Position` は `Deck`, `Discard`, `Field`, `Hand`, `FreeSpace`, `Outside` の `std::variant`
+- `Pyramid::state_type` は `shlab::gopc::utility::CardState<Position, 54>`
+- `Position` は `Deck`, `Discard`, `Field`, `Hand`, `FreeSpace`, `Outside` を保持する tagged union 型で、`kind()` / `is<T>()` / `get<T>()` / `get_if<T>()` / `visit(...)` で扱える
 - `Deck` と `Discard` は `number` で順序を表現する
 - `Field` は `row` と `number` を持つ
 - `Hand` は現在選択中のカード、`FreeSpace` / `Outside` は joker 関連位置として使う

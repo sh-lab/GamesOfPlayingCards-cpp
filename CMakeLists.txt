@@ -32,6 +32,10 @@ if(BUILD_TESTING)
         tests/shlab/gopc/playing_cards/card_test.cpp
     )
 
+    add_executable(card_state_tests
+        tests/shlab/gopc/utility/card_state_test.cpp
+    )
+
     add_executable(klondike_tests
         tests/shlab/gopc/games/klondike/klondike_test.cpp
     )
@@ -73,6 +77,11 @@ if(BUILD_TESTING)
     )
 
     target_link_libraries(playing_cards_card_tests
+        PRIVATE
+            games_of_playing_cards
+    )
+
+    target_link_libraries(card_state_tests
         PRIVATE
             games_of_playing_cards
     )
@@ -128,6 +137,7 @@ if(BUILD_TESTING)
     )
 
     add_test(NAME playing_cards_card_tests COMMAND playing_cards_card_tests)
+    add_test(NAME card_state_tests COMMAND card_state_tests)
     add_test(NAME klondike_tests COMMAND klondike_tests)
     add_test(NAME freecell_tests COMMAND freecell_tests)
     add_test(NAME calculation_tests COMMAND calculation_tests)

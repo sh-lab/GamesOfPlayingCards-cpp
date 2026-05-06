@@ -105,7 +105,7 @@ Golf::state_type MakeState(
         if (!inserted) {
             throw std::invalid_argument("Duplicate fixed card.");
         }
-        if (const auto* fixed_deck = std::get_if<Deck>(&position); fixed_deck != nullptr) {
+        if (const auto* fixed_deck = GetIf<Deck>(&position); fixed_deck != nullptr) {
             fixed_deck_numbers.push_back(fixed_deck->number);
         }
         positions.emplace(card, position);
@@ -138,10 +138,10 @@ void TestDealBuildsInitialState() {
     Check(!golf.is_win(), "Initial deal is not a win");
     Check(!golf.is_lose(), "Initial deal is not a lose");
 
-    CheckEqual(std::get<Hand>(golf.position_of(deck[0])), Hand{0}, "First card starts in hand");
-    CheckEqual(std::get<Field>(golf.position_of(deck[1])), Field{Lane::First, 0}, "First lane starts after hand");
-    CheckEqual(std::get<Field>(golf.position_of(deck[35])), Field{Lane::Seventh, 4}, "Fields consume 35 cards");
-    CheckEqual(std::get<Deck>(golf.position_of(deck[53])), Deck{17}, "Last card becomes top deck");
+    CheckEqual(Get<Hand>(golf.position_of(deck[0])), Hand{0}, "First card starts in hand");
+    CheckEqual(Get<Field>(golf.position_of(deck[1])), Field{Lane::First, 0}, "First lane starts after hand");
+    CheckEqual(Get<Field>(golf.position_of(deck[35])), Field{Lane::Seventh, 4}, "Fields consume 35 cards");
+    CheckEqual(Get<Deck>(golf.position_of(deck[53])), Deck{17}, "Last card becomes top deck");
 }
 
 void TestMoveFromDeckReturnsNewState() {
@@ -153,8 +153,8 @@ void TestMoveFromDeckReturnsNewState() {
 
     const auto next = golf.move_to_hand(top_deck);
 
-    CheckEqual(std::get<Deck>(golf.position_of(top_deck)), Deck{17}, "Original state is unchanged");
-    CheckEqual(std::get<Hand>(next.position_of(top_deck)), Hand{1}, "Moved deck card becomes the new top hand");
+    CheckEqual(Get<Deck>(golf.position_of(top_deck)), Deck{17}, "Original state is unchanged");
+    CheckEqual(Get<Hand>(next.position_of(top_deck)), Hand{1}, "Moved deck card becomes the new top hand");
     CheckEqual(next.deck_count(), std::size_t{17}, "Deck count decreases after drawing from deck");
 }
 
@@ -173,7 +173,7 @@ void TestFieldTopRuleAndRankMove() {
     Check(golf.can_move_to_hand(movable), "Adjacent rank field top can move");
 
     const auto next = golf.move_to_hand(movable);
-    CheckEqual(std::get<Hand>(next.position_of(movable)), Hand{1}, "Field card moves onto hand");
+    CheckEqual(Get<Hand>(next.position_of(movable)), Hand{1}, "Field card moves onto hand");
 }
 
 void TestJokerRule() {

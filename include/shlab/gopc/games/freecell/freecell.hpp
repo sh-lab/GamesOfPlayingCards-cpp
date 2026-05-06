@@ -1,18 +1,18 @@
 #pragma once
 
 #include <span>
-#include <unordered_map>
 
 #include "shlab/gopc/games/freecell/column.hpp"
 #include "shlab/gopc/games/freecell/position.hpp"
 #include "shlab/gopc/playing_cards/card.hpp"
+#include "shlab/gopc/utility/card_state.hpp"
 
 namespace shlab::gopc::games::freecell {
 
 class FreeCell {
 public:
     using card_type = shlab::gopc::playing_cards::Card;
-    using state_type = std::unordered_map<card_type, Position>;
+    using state_type = shlab::gopc::utility::CardState<Position, 52>;
 
     explicit FreeCell(state_type positions);
 

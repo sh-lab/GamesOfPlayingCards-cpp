@@ -11,8 +11,8 @@ Four Leaf Clover の状態を `Card -> Position` の不変写像として表現�
 
 ## 状態モデル
 
-- `FourLeafClover::state_type` は `std::unordered_map<Card, Position>`
-- `Position` は `Field`, `Stock`, `Removed` の `std::variant`
+- `FourLeafClover::state_type` は `shlab::gopc::utility::CardState<Position, 52>`
+- `Position` は `Field`, `Stock`, `Removed` を保持する tagged union 型で、`kind()` / `is<T>()` / `get<T>()` / `get_if<T>()` / `visit(...)` で扱える
 - `Field` は 4x4 の場札スロットを row-major の `number` で表す
 - `Stock` は補充順の `number` を持つ
 

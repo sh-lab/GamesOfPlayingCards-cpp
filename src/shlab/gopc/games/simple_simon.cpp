@@ -66,7 +66,7 @@ std::size_t TableauCount(const SimpleSimon::state_type& positions, const Column 
         positions.begin(),
         positions.end(),
         [column](const auto& pair) {
-            const auto* tableau = std::get_if<Tableau>(&pair.second);
+            const auto* tableau = GetIf<Tableau>(&pair.second);
             return tableau != nullptr && tableau->column == column;
         });
 }
@@ -75,7 +75,7 @@ std::optional<Card> TableauTopCard(const SimpleSimon::state_type& positions, con
     std::optional<std::pair<int, Card>> result;
 
     for (const auto& [card, position] : positions) {
-        if (const auto* tableau = std::get_if<Tableau>(&position);
+        if (const auto* tableau = GetIf<Tableau>(&position);
             tableau != nullptr && tableau->column == column) {
             if (!result.has_value() || result->first < tableau->number) {
                 result = std::pair{tableau->number, card};
@@ -93,14 +93,14 @@ std::optional<Card> TableauTopCard(const SimpleSimon::state_type& positions, con
 std::vector<std::pair<int, Card>> OrderedTableauTail(
     const SimpleSimon::state_type& positions,
     const Card& card) {
-    const auto* tableau = std::get_if<Tableau>(&LookupPosition(positions, card));
+    const auto* tableau = GetIf<Tableau>(&LookupPosition(positions, card));
     if (tableau == nullptr) {
         return {};
     }
 
     std::vector<std::pair<int, Card>> stack;
     for (const auto& [candidate_card, position] : positions) {
-        if (const auto* candidate = std::get_if<Tableau>(&position);
+        if (const auto* candidate = GetIf<Tableau>(&position);
             candidate != nullptr
             && candidate->column == tableau->column
             && candidate->number >= tableau->number) {
@@ -157,7 +157,7 @@ void ValidateTableau(const SimpleSimon::state_type& positions) {
 
     for (const auto& [card, position] : positions) {
         (void)card;
-        if (const auto* tableau = std::get_if<Tableau>(&position); tableau != nullptr) {
+        if (const auto* tableau = GetIf<Tableau>(&position); tableau != nullptr) {
             if (tableau->number < 0) {
                 ThrowInvalidState("Tableau positions must use non-negative indices.");
             }
@@ -202,7 +202,7 @@ void ValidateFoundation(const SimpleSimon::state_type& positions) {
     std::array<std::vector<int>, 4> ranks_by_suit;
 
     for (const auto& [card, position] : positions) {
-        if (std::holds_alternative<Foundation>(position)) {
+        if (HoldsAlternative<Foundation>(position)) {
             ranks_by_suit[SuitIndex(card.suit())].push_back(ToInt(card.rank()));
         }
     }
@@ -278,7 +278,7 @@ bool SimpleSimon::is_win() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Foundation>(pair.second);
+            return HoldsAlternative<Foundation>(pair.second);
         });
 }
 
@@ -301,7 +301,7 @@ SimpleSimon SimpleSimon::move_to_foundation(const card_type& card) const {
 }
 
 bool SimpleSimon::can_move_to_tableau(const card_type& card, const Column column) const {
-    const auto* tableau = std::get_if<Tableau>(&position_of(card));
+    const auto* tableau = GetIf<Tableau>(&position_of(card));
     if (tableau == nullptr || tableau->column == column) {
         return false;
     }

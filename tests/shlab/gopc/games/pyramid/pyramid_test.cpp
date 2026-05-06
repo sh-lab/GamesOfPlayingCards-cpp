@@ -99,7 +99,7 @@ Pyramid::state_type MakeState(const std::vector<std::pair<Card, Position>>& fixe
             throw std::invalid_argument("Duplicate fixed card.");
         }
 
-        if (const auto* free_space = std::get_if<FreeSpace>(&position); free_space != nullptr) {
+        if (const auto* free_space = GetIf<FreeSpace>(&position); free_space != nullptr) {
             if (free_space->number == 0) {
                 free_space_0_used = true;
             } else if (free_space->number == 1) {
@@ -146,18 +146,18 @@ void TestDealBuildsInitialState() {
     CheckEqual(pyramid.deck_count(), std::size_t{24}, "Deal creates 24 deck cards");
     Check(!pyramid.is_win(), "Initial deal is not a win");
 
-    CheckEqual(std::get<Field>(pyramid.position_of(deck[0])), Field{0, 0}, "First card starts at the pyramid top");
-    CheckEqual(std::get<Field>(pyramid.position_of(deck[1])), Field{1, 0}, "Second card starts the second row");
-    CheckEqual(std::get<Field>(pyramid.position_of(deck[2])), Field{1, 1}, "Third card completes the second row");
-    CheckEqual(std::get<Field>(pyramid.position_of(deck[27])), Field{6, 6}, "Twenty-eighth card ends the seventh row");
-    CheckEqual(std::get<Deck>(pyramid.position_of(deck[28])), Deck{0}, "Next card becomes the deck bottom");
-    CheckEqual(std::get<Deck>(pyramid.position_of(deck[51])), Deck{23}, "Last standard card becomes the deck top");
+    CheckEqual(Get<Field>(pyramid.position_of(deck[0])), Field{0, 0}, "First card starts at the pyramid top");
+    CheckEqual(Get<Field>(pyramid.position_of(deck[1])), Field{1, 0}, "Second card starts the second row");
+    CheckEqual(Get<Field>(pyramid.position_of(deck[2])), Field{1, 1}, "Third card completes the second row");
+    CheckEqual(Get<Field>(pyramid.position_of(deck[27])), Field{6, 6}, "Twenty-eighth card ends the seventh row");
+    CheckEqual(Get<Deck>(pyramid.position_of(deck[28])), Deck{0}, "Next card becomes the deck bottom");
+    CheckEqual(Get<Deck>(pyramid.position_of(deck[51])), Deck{23}, "Last standard card becomes the deck top");
     CheckEqual(
-        std::get<FreeSpace>(pyramid.position_of(Card::from_id(CardId::Joker))),
+        Get<FreeSpace>(pyramid.position_of(Card::from_id(CardId::Joker))),
         FreeSpace{0},
         "Joker starts in the first free space");
     CheckEqual(
-        std::get<FreeSpace>(pyramid.position_of(Card::from_id(CardId::ExtraJoker))),
+        Get<FreeSpace>(pyramid.position_of(Card::from_id(CardId::ExtraJoker))),
         FreeSpace{1},
         "Extra joker starts in the second free space");
 }
@@ -176,13 +176,13 @@ void TestPairAndSingleRemove() {
     Check(!pyramid.can_remove(king), "Covered king cannot be removed alone");
 
     const auto after_pair = pyramid.remove(ace, queen);
-    Check(std::holds_alternative<Outside>(after_pair.position_of(ace)), "First removed card moves outside");
-    Check(std::holds_alternative<Outside>(after_pair.position_of(queen)), "Second removed card moves outside");
-    Check(std::holds_alternative<Field>(pyramid.position_of(ace)), "Original state stays unchanged after pair removal");
+    Check(HoldsAlternative<Outside>(after_pair.position_of(ace)), "First removed card moves outside");
+    Check(HoldsAlternative<Outside>(after_pair.position_of(queen)), "Second removed card moves outside");
+    Check(HoldsAlternative<Field>(pyramid.position_of(ace)), "Original state stays unchanged after pair removal");
     Check(after_pair.can_remove(king), "Removing the covering cards exposes the king");
 
     const auto after_king = after_pair.remove(king);
-    Check(std::holds_alternative<Outside>(after_king.position_of(king)), "Single removable king moves outside");
+    Check(HoldsAlternative<Outside>(after_king.position_of(king)), "Single removable king moves outside");
 }
 
 void TestJokerWildcardRemoval() {
@@ -197,8 +197,8 @@ void TestJokerWildcardRemoval() {
     Check(pyramid.can_remove(joker, four), "Joker acts as a wildcard for pair removal");
 
     const auto next = pyramid.remove(joker, four);
-    Check(std::holds_alternative<Outside>(next.position_of(joker)), "Joker pair removal moves the joker outside");
-    Check(std::holds_alternative<Outside>(next.position_of(four)), "Joker pair removal moves the partner outside");
+    Check(HoldsAlternative<Outside>(next.position_of(joker)), "Joker pair removal moves the joker outside");
+    Check(HoldsAlternative<Outside>(next.position_of(four)), "Joker pair removal moves the partner outside");
 }
 
 void TestDrawMovesPreviousHandToDiscard() {
@@ -216,9 +216,9 @@ void TestDrawMovesPreviousHandToDiscard() {
 
     const auto next = pyramid.draw(second);
 
-    CheckEqual(std::get<Hand>(next.position_of(second)), Hand{}, "Drawn card becomes the new hand");
-    CheckEqual(std::get<Discard>(next.position_of(hand)), Discard{0}, "Previous hand moves to the discard pile");
-    CheckEqual(std::get<Deck>(pyramid.position_of(second)), Deck{1}, "Original state is unchanged after drawing");
+    CheckEqual(Get<Hand>(next.position_of(second)), Hand{}, "Drawn card becomes the new hand");
+    CheckEqual(Get<Discard>(next.position_of(hand)), Discard{0}, "Previous hand moves to the discard pile");
+    CheckEqual(Get<Deck>(pyramid.position_of(second)), Deck{1}, "Original state is unchanged after drawing");
 }
 
 void TestRedealReversesDiscardIntoDeck() {
@@ -232,8 +232,8 @@ void TestRedealReversesDiscardIntoDeck() {
     Check(pyramid.can_redeal(), "Redeal is allowed when the deck is empty");
 
     const auto redealt = pyramid.redeal();
-    CheckEqual(std::get<Deck>(redealt.position_of(second)), Deck{0}, "Top discard becomes the new deck bottom");
-    CheckEqual(std::get<Deck>(redealt.position_of(first)), Deck{1}, "Bottom discard becomes the new deck top");
+    CheckEqual(Get<Deck>(redealt.position_of(second)), Deck{0}, "Top discard becomes the new deck bottom");
+    CheckEqual(Get<Deck>(redealt.position_of(first)), Deck{1}, "Bottom discard becomes the new deck top");
 }
 
 void TestWinAndInvalidCases() {

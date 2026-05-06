@@ -104,7 +104,7 @@ bool IsJackQueenKingSet(std::span<const Card> cards) noexcept {
 }
 
 bool IsFieldCard(const FourLeafClover::state_type& positions, const Card& card) {
-    return std::holds_alternative<Field>(LookupPosition(positions, card));
+    return HoldsAlternative<Field>(LookupPosition(positions, card));
 }
 
 void ValidateCardSet(const FourLeafClover::state_type& positions) {
@@ -126,7 +126,7 @@ void ValidateField(const FourLeafClover::state_type& positions) {
     for (const auto& [card, position] : positions) {
         (void)card;
 
-        if (const auto* field = std::get_if<Field>(&position); field != nullptr) {
+        if (const auto* field = GetIf<Field>(&position); field != nullptr) {
             if (field->number < 0 || field->number >= kFieldSlotCount) {
                 ThrowInvalidState("Field positions must be in the range [0, 15].");
             }
@@ -146,7 +146,7 @@ void ValidateStock(const FourLeafClover::state_type& positions) {
     for (const auto& [card, position] : positions) {
         (void)card;
 
-        if (const auto* stock = std::get_if<Stock>(&position); stock != nullptr) {
+        if (const auto* stock = GetIf<Stock>(&position); stock != nullptr) {
             if (stock->number < 0) {
                 ThrowInvalidState("Stock positions must use non-negative indices.");
             }
@@ -173,7 +173,7 @@ std::vector<std::pair<int, Card>> OrderedStock(const FourLeafClover::state_type&
     stock_cards.reserve(positions.size());
 
     for (const auto& [card, position] : positions) {
-        if (const auto* stock = std::get_if<Stock>(&position); stock != nullptr) {
+        if (const auto* stock = GetIf<Stock>(&position); stock != nullptr) {
             stock_cards.emplace_back(stock->number, card);
         }
     }
@@ -194,7 +194,7 @@ std::vector<int> EmptyFieldSlots(const FourLeafClover::state_type& positions) {
     for (const auto& [card, position] : positions) {
         (void)card;
 
-        if (const auto* field = std::get_if<Field>(&position); field != nullptr) {
+        if (const auto* field = GetIf<Field>(&position); field != nullptr) {
             occupied[static_cast<std::size_t>(field->number)] = true;
         }
     }
@@ -281,7 +281,7 @@ std::size_t FourLeafClover::stock_count() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Stock>(pair.second);
+            return HoldsAlternative<Stock>(pair.second);
         });
 }
 
@@ -290,7 +290,7 @@ bool FourLeafClover::is_win() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Removed>(pair.second);
+            return HoldsAlternative<Removed>(pair.second);
         });
 }
 

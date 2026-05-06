@@ -65,14 +65,14 @@ std::optional<Card> PreviousRankCard(const Card& card) noexcept {
 }
 
 bool IsTopTableauCard(const BeleagueredCastle::state_type& positions, const Card& card) {
-    const auto* tableau = std::get_if<Tableau>(&LookupPosition(positions, card));
+    const auto* tableau = GetIf<Tableau>(&LookupPosition(positions, card));
     if (tableau == nullptr) {
         return false;
     }
 
     for (const auto& [other_card, position] : positions) {
         (void)other_card;
-        if (const auto* other_tableau = std::get_if<Tableau>(&position);
+        if (const auto* other_tableau = GetIf<Tableau>(&position);
             other_tableau != nullptr
             && other_tableau->column == tableau->column
             && other_tableau->number > tableau->number) {
@@ -89,7 +89,7 @@ std::optional<Card> TableauTopCard(
     std::optional<std::pair<int, Card>> result;
 
     for (const auto& [card, position] : positions) {
-        if (const auto* tableau = std::get_if<Tableau>(&position);
+        if (const auto* tableau = GetIf<Tableau>(&position);
             tableau != nullptr && tableau->column == column) {
             if (!result.has_value() || result->first < tableau->number) {
                 result = std::pair{tableau->number, card};
@@ -111,7 +111,7 @@ std::size_t TableauCount(
         positions.begin(),
         positions.end(),
         [column](const auto& pair) {
-            const auto* tableau = std::get_if<Tableau>(&pair.second);
+            const auto* tableau = GetIf<Tableau>(&pair.second);
             return tableau != nullptr && tableau->column == column;
         });
 }
@@ -134,7 +134,7 @@ void ValidateTableau(const BeleagueredCastle::state_type& positions) {
 
     for (const auto& [card, position] : positions) {
         (void)card;
-        if (const auto* tableau = std::get_if<Tableau>(&position); tableau != nullptr) {
+        if (const auto* tableau = GetIf<Tableau>(&position); tableau != nullptr) {
             if (tableau->number < 0) {
                 ThrowInvalidState("Tableau positions must use non-negative indices.");
             }
@@ -179,7 +179,7 @@ void ValidateFoundation(const BeleagueredCastle::state_type& positions) {
     std::array<std::vector<int>, 4> ranks_by_suit;
 
     for (const auto& [card, position] : positions) {
-        if (std::holds_alternative<Foundation>(position)) {
+        if (HoldsAlternative<Foundation>(position)) {
             ranks_by_suit[SuitIndex(card.suit())].push_back(ToInt(card.rank()));
         }
     }
@@ -269,7 +269,7 @@ bool BeleagueredCastle::is_win() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Foundation>(pair.second);
+            return HoldsAlternative<Foundation>(pair.second);
         });
 }
 
@@ -284,7 +284,7 @@ bool BeleagueredCastle::can_move_to_foundation(const card_type& card) const {
 
     const auto previous_card = PreviousRankCard(card);
     return previous_card.has_value()
-        && std::holds_alternative<Foundation>(position_of(*previous_card));
+        && HoldsAlternative<Foundation>(position_of(*previous_card));
 }
 
 BeleagueredCastle BeleagueredCastle::move_to_foundation(const card_type& card) const {
@@ -302,7 +302,7 @@ bool BeleagueredCastle::can_move_to_tableau(const card_type& card, const Column 
         return false;
     }
 
-    const auto* source_tableau = std::get_if<Tableau>(&position_of(card));
+    const auto* source_tableau = GetIf<Tableau>(&position_of(card));
     if (source_tableau == nullptr || source_tableau->column == column) {
         return false;
     }

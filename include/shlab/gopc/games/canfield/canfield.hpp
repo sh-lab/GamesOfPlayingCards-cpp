@@ -1,12 +1,12 @@
 #pragma once
 
 #include <span>
-#include <unordered_map>
 
 #include "shlab/gopc/games/canfield/column.hpp"
 #include "shlab/gopc/games/canfield/position.hpp"
 #include "shlab/gopc/playing_cards/card.hpp"
 #include "shlab/gopc/playing_cards/rank.hpp"
+#include "shlab/gopc/utility/card_state.hpp"
 
 namespace shlab::gopc::games::canfield {
 
@@ -14,7 +14,7 @@ class Canfield {
 public:
     using card_type = shlab::gopc::playing_cards::Card;
     using rank_type = shlab::gopc::playing_cards::Rank;
-    using state_type = std::unordered_map<card_type, Position>;
+    using state_type = shlab::gopc::utility::CardState<Position, 52>;
 
     Canfield(state_type positions, rank_type foundation_base_rank);
 

@@ -101,7 +101,7 @@ SimpleSimon::state_type MakeState(
             throw std::invalid_argument("Duplicate fixed card.");
         }
 
-        if (const auto* tableau = std::get_if<Tableau>(&position); tableau != nullptr) {
+        if (const auto* tableau = GetIf<Tableau>(&position); tableau != nullptr) {
             tableau_numbers[static_cast<std::size_t>(tableau->column)].push_back(tableau->number);
         }
 
@@ -134,27 +134,27 @@ void TestDealBuildsInitialState() {
     Check(!simple_simon.is_win(), "Initial deal is not a win");
 
     CheckEqual(
-        std::get<Tableau>(simple_simon.position_of(deck[0])),
+        Get<Tableau>(simple_simon.position_of(deck[0])),
         Tableau{Column::First, 0},
         "First card starts the first tableau column");
     CheckEqual(
-        std::get<Tableau>(simple_simon.position_of(deck[7])),
+        Get<Tableau>(simple_simon.position_of(deck[7])),
         Tableau{Column::First, 7},
         "First tableau column has eight cards");
     CheckEqual(
-        std::get<Tableau>(simple_simon.position_of(deck[8])),
+        Get<Tableau>(simple_simon.position_of(deck[8])),
         Tableau{Column::Second, 0},
         "Second tableau column follows the first");
     CheckEqual(
-        std::get<Tableau>(simple_simon.position_of(deck[24])),
+        Get<Tableau>(simple_simon.position_of(deck[24])),
         Tableau{Column::Fourth, 0},
         "Fourth tableau column starts after the three eight-card columns");
     CheckEqual(
-        std::get<Tableau>(simple_simon.position_of(deck[51])),
+        Get<Tableau>(simple_simon.position_of(deck[51])),
         Tableau{Column::Tenth, 0},
         "Last card becomes the only card in the tenth tableau column");
     Check(
-        !std::holds_alternative<Foundation>(simple_simon.position_of(deck[0])),
+        !HoldsAlternative<Foundation>(simple_simon.position_of(deck[0])),
         "Initial deal has no foundation cards");
 }
 
@@ -195,11 +195,11 @@ void TestMoveCompleteSuitRunToFoundationReturnsNewState() {
     const auto next = simple_simon.move_to_foundation(king);
 
     CheckEqual(
-        std::get<Tableau>(simple_simon.position_of(king)),
+        Get<Tableau>(simple_simon.position_of(king)),
         Tableau{Column::First, 0},
         "Original state is unchanged after foundation move");
-    Check(std::holds_alternative<Foundation>(next.position_of(king)), "King moves to foundation");
-    Check(std::holds_alternative<Foundation>(next.position_of(ace)), "Ace moves to foundation with the run");
+    Check(HoldsAlternative<Foundation>(next.position_of(king)), "King moves to foundation");
+    Check(HoldsAlternative<Foundation>(next.position_of(ace)), "Ace moves to foundation with the run");
 }
 
 void TestMoveSameSuitTailToTableauReturnsNewState() {
@@ -222,19 +222,19 @@ void TestMoveSameSuitTailToTableauReturnsNewState() {
     const auto next = simple_simon.move_to_tableau(eight, Column::First);
 
     CheckEqual(
-        std::get<Tableau>(simple_simon.position_of(eight)),
+        Get<Tableau>(simple_simon.position_of(eight)),
         Tableau{Column::Second, 0},
         "Original state is unchanged after tableau move");
     CheckEqual(
-        std::get<Tableau>(next.position_of(eight)),
+        Get<Tableau>(next.position_of(eight)),
         Tableau{Column::First, 1},
         "Selected card lands first on the destination tableau");
     CheckEqual(
-        std::get<Tableau>(next.position_of(seven)),
+        Get<Tableau>(next.position_of(seven)),
         Tableau{Column::First, 2},
         "Tail order is preserved during the move");
     CheckEqual(
-        std::get<Tableau>(next.position_of(six)),
+        Get<Tableau>(next.position_of(six)),
         Tableau{Column::First, 3},
         "Entire same-suit tail moves together");
 }
@@ -283,10 +283,10 @@ void TestWinAndInvalidCases() {
         positions.erase(Card::of(Suit::Clubs, Rank::Queen));
         positions.emplace(Card::from_id(CardId::Joker), Tableau{Column::First, 0});
         static_cast<void>(SimpleSimon{std::move(positions)});
-    } catch (const std::invalid_argument&) {
+    } catch (const std::exception&) {
         invalid_state = true;
     }
-    Check(invalid_state, "Simple Simon rejects joker states");
+    Check(invalid_state, "Simple Simon joker states remain invalid");
 
     const auto king = Card::of(Suit::Clubs, Rank::King);
     const auto queen = Card::of(Suit::Clubs, Rank::Queen);

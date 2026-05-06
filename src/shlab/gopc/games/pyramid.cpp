@@ -3,11 +3,10 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <stdexcept>
-#include <unordered_set>
 #include <utility>
-#include <vector>
 
 #include "shlab/gopc/playing_cards/card_id.hpp"
 #include "shlab/gopc/playing_cards/rank.hpp"
@@ -23,6 +22,36 @@ constexpr std::size_t kStandardDeckSize = 52;
 constexpr std::size_t kPyramidDeckSize = 54;
 constexpr int kFieldRowCount = 7;
 constexpr int kFreeSpaceCount = 2;
+
+[[noreturn]] void ThrowInvalidState(const char* message);
+[[noreturn]] void ThrowInvalidMove(const char* message);
+
+struct ContiguousNumbers {
+    std::array<bool, kPyramidDeckSize> occupied{};
+    std::size_t count{};
+
+    void add(const int number, const char* negative_message) {
+        if (number < 0) {
+            ThrowInvalidState(negative_message);
+        }
+
+        const auto index = static_cast<std::size_t>(number);
+        if (index >= occupied.size()) {
+            ThrowInvalidState(negative_message);
+        }
+
+        occupied[index] = true;
+        ++count;
+    }
+
+    void validate(const char* message) const {
+        for (std::size_t i = 0; i < count; ++i) {
+            if (!occupied[i]) {
+                ThrowInvalidState(message);
+            }
+        }
+    }
+};
 
 [[noreturn]] void ThrowInvalidState(const char* message) {
     throw std::invalid_argument(message);
@@ -56,7 +85,7 @@ auto MutablePosition(Pyramid::state_type& positions, const Card& card) -> Positi
 
 std::optional<Card> HandCard(const Pyramid::state_type& positions) {
     for (const auto& [card, position] : positions) {
-        if (std::holds_alternative<Hand>(position)) {
+        if (HoldsAlternative<Hand>(position)) {
             return card;
         }
     }
@@ -65,7 +94,7 @@ std::optional<Card> HandCard(const Pyramid::state_type& positions) {
 }
 
 bool IsTopDeckCard(const Pyramid::state_type& positions, const Card& card) {
-    const auto* deck = std::get_if<Deck>(&LookupPosition(positions, card));
+    const auto* deck = GetIf<Deck>(&LookupPosition(positions, card));
     if (deck == nullptr) {
         return false;
     }
@@ -73,7 +102,7 @@ bool IsTopDeckCard(const Pyramid::state_type& positions, const Card& card) {
     for (const auto& [other_card, position] : positions) {
         (void)other_card;
 
-        if (const auto* other_deck = std::get_if<Deck>(&position);
+        if (const auto* other_deck = GetIf<Deck>(&position);
             other_deck != nullptr && other_deck->number > deck->number) {
             return false;
         }
@@ -83,7 +112,7 @@ bool IsTopDeckCard(const Pyramid::state_type& positions, const Card& card) {
 }
 
 bool IsTopDiscardCard(const Pyramid::state_type& positions, const Card& card) {
-    const auto* discard = std::get_if<Discard>(&LookupPosition(positions, card));
+    const auto* discard = GetIf<Discard>(&LookupPosition(positions, card));
     if (discard == nullptr) {
         return false;
     }
@@ -91,7 +120,7 @@ bool IsTopDiscardCard(const Pyramid::state_type& positions, const Card& card) {
     for (const auto& [other_card, position] : positions) {
         (void)other_card;
 
-        if (const auto* other_discard = std::get_if<Discard>(&position);
+        if (const auto* other_discard = GetIf<Discard>(&position);
             other_discard != nullptr && other_discard->number > discard->number) {
             return false;
         }
@@ -129,39 +158,21 @@ void ValidateCardSet(const Pyramid::state_type& positions) {
 }
 
 void ValidateDeckAndDiscard(const Pyramid::state_type& positions) {
-    std::vector<int> deck_numbers;
-    std::vector<int> discard_numbers;
+    ContiguousNumbers deck_numbers;
+    ContiguousNumbers discard_numbers;
 
     for (const auto& [card, position] : positions) {
         (void)card;
 
-        if (const auto* deck = std::get_if<Deck>(&position); deck != nullptr) {
-            if (deck->number < 0) {
-                ThrowInvalidState("Deck positions must use non-negative indices.");
-            }
-            deck_numbers.push_back(deck->number);
-        } else if (const auto* discard = std::get_if<Discard>(&position); discard != nullptr) {
-            if (discard->number < 0) {
-                ThrowInvalidState("Discard positions must use non-negative indices.");
-            }
-            discard_numbers.push_back(discard->number);
+        if (const auto* deck = GetIf<Deck>(&position); deck != nullptr) {
+            deck_numbers.add(deck->number, "Deck positions must use non-negative indices.");
+        } else if (const auto* discard = GetIf<Discard>(&position); discard != nullptr) {
+            discard_numbers.add(discard->number, "Discard positions must use non-negative indices.");
         }
     }
 
-    std::sort(deck_numbers.begin(), deck_numbers.end());
-    std::sort(discard_numbers.begin(), discard_numbers.end());
-
-    for (std::size_t i = 0; i < deck_numbers.size(); ++i) {
-        if (deck_numbers[i] != static_cast<int>(i)) {
-            ThrowInvalidState("Deck positions must be contiguous from zero.");
-        }
-    }
-
-    for (std::size_t i = 0; i < discard_numbers.size(); ++i) {
-        if (discard_numbers[i] != static_cast<int>(i)) {
-            ThrowInvalidState("Discard positions must be contiguous from zero.");
-        }
-    }
+    deck_numbers.validate("Deck positions must be contiguous from zero.");
+    discard_numbers.validate("Discard positions must be contiguous from zero.");
 }
 
 void ValidateField(const Pyramid::state_type& positions) {
@@ -170,7 +181,7 @@ void ValidateField(const Pyramid::state_type& positions) {
     for (const auto& [card, position] : positions) {
         (void)card;
 
-        if (const auto* field = std::get_if<Field>(&position); field != nullptr) {
+        if (const auto* field = GetIf<Field>(&position); field != nullptr) {
             if (field->row < 0 || field->row >= kFieldRowCount) {
                 ThrowInvalidState("Field rows must be in the range [0, 6].");
             }
@@ -192,7 +203,7 @@ void ValidateFreeSpaceAndJokers(const Pyramid::state_type& positions) {
     std::array<bool, kFreeSpaceCount> occupied_free_spaces{};
 
     for (const auto& [card, position] : positions) {
-        if (const auto* free_space = std::get_if<FreeSpace>(&position); free_space != nullptr) {
+        if (const auto* free_space = GetIf<FreeSpace>(&position); free_space != nullptr) {
             if (free_space->number < 0 || free_space->number >= kFreeSpaceCount) {
                 ThrowInvalidState("FreeSpace positions must be in the range [0, 1].");
             }
@@ -212,22 +223,25 @@ void ValidateFreeSpaceAndJokers(const Pyramid::state_type& positions) {
             continue;
         }
 
-        if (!std::holds_alternative<FreeSpace>(position) && !std::holds_alternative<Outside>(position)) {
+        if (!HoldsAlternative<FreeSpace>(position) && !HoldsAlternative<Outside>(position)) {
             ThrowInvalidState("Jokers must be in FreeSpace or Outside.");
         }
     }
 }
 
 void ValidateHand(const Pyramid::state_type& positions) {
-    const auto hand_count = std::count_if(
-        positions.begin(),
-        positions.end(),
-        [](const auto& pair) {
-            return std::holds_alternative<Hand>(pair.second);
-        });
+    bool has_hand = false;
+    for (const auto& [card, position] : positions) {
+        (void)card;
+        if (!HoldsAlternative<Hand>(position)) {
+            continue;
+        }
 
-    if (hand_count > 1) {
-        ThrowInvalidState("Pyramid state can contain at most one hand card.");
+        if (has_hand) {
+            ThrowInvalidState("Pyramid state can contain at most one hand card.");
+        }
+
+        has_hand = true;
     }
 }
 
@@ -251,21 +265,21 @@ Pyramid Pyramid::deal(std::span<const card_type> deck) {
         ThrowInvalidState("Pyramid deals require exactly 54 cards.");
     }
 
-    std::unordered_set<Card> seen;
-    seen.reserve(deck.size());
-
-    std::vector<Card> standard_cards;
-    standard_cards.reserve(kStandardDeckSize);
+    std::array<bool, 256> seen{};
+    std::array<std::optional<Card>, kStandardDeckSize> standard_cards{};
+    std::size_t standard_card_count = 0;
     bool has_joker = false;
     bool has_extra_joker = false;
 
     for (const auto& card : deck) {
-        if (!seen.insert(card).second) {
+        const auto seen_index = static_cast<std::uint8_t>(card.id());
+        if (seen[seen_index]) {
             ThrowInvalidState("Pyramid deals require 54 distinct cards.");
         }
+        seen[seen_index] = true;
 
         if (card.is_standard_card()) {
-            standard_cards.push_back(card);
+            standard_cards[standard_card_count++] = card;
         } else if (card.id() == CardId::Joker) {
             has_joker = true;
         } else if (card.id() == CardId::ExtraJoker) {
@@ -275,7 +289,7 @@ Pyramid Pyramid::deal(std::span<const card_type> deck) {
         }
     }
 
-    if (standard_cards.size() != kStandardDeckSize || !has_joker || !has_extra_joker) {
+    if (standard_card_count != kStandardDeckSize || !has_joker || !has_extra_joker) {
         ThrowInvalidState("Pyramid deals require 52 standard cards and two jokers.");
     }
 
@@ -285,13 +299,13 @@ Pyramid Pyramid::deal(std::span<const card_type> deck) {
     std::size_t card_index = 0;
     for (int row = 0; row < kFieldRowCount; ++row) {
         for (int number = 0; number <= row; ++number) {
-            positions.emplace(standard_cards[card_index++], Field{row, number});
+            positions.emplace(*standard_cards[card_index++], Field{row, number});
         }
     }
 
     int deck_number = 0;
-    while (card_index < standard_cards.size()) {
-        positions.emplace(standard_cards[card_index++], Deck{deck_number++});
+    while (card_index < standard_card_count) {
+        positions.emplace(*standard_cards[card_index++], Deck{deck_number++});
     }
 
     positions.emplace(Card::from_id(CardId::Joker), FreeSpace{0});
@@ -317,7 +331,7 @@ std::size_t Pyramid::deck_count() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Deck>(pair.second);
+            return HoldsAlternative<Deck>(pair.second);
         });
 }
 
@@ -326,31 +340,31 @@ bool Pyramid::is_win() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Field>(pair.second);
+            return HoldsAlternative<Field>(pair.second);
         });
 }
 
 bool Pyramid::can_select_for_remove(const card_type& card) const {
     const auto& position = position_of(card);
 
-    if (std::holds_alternative<Outside>(position)) {
+    if (HoldsAlternative<Outside>(position)) {
         return false;
     }
 
-    if (std::holds_alternative<Hand>(position) || std::holds_alternative<FreeSpace>(position)) {
+    if (HoldsAlternative<Hand>(position) || HoldsAlternative<FreeSpace>(position)) {
         return true;
     }
 
-    if (std::holds_alternative<Discard>(position)) {
+    if (HoldsAlternative<Discard>(position)) {
         return IsTopDiscardCard(positions_, card);
     }
 
-    if (const auto* field = std::get_if<Field>(&position); field != nullptr) {
+    if (const auto* field = GetIf<Field>(&position); field != nullptr) {
         return !std::any_of(
             positions_.begin(),
             positions_.end(),
             [&](const auto& pair) {
-                const auto* other_field = std::get_if<Field>(&pair.second);
+                const auto* other_field = GetIf<Field>(&pair.second);
                 return other_field != nullptr
                     && other_field->row == field->row + 1
                     && (other_field->number == field->number
@@ -408,7 +422,7 @@ bool Pyramid::can_redeal() const noexcept {
         positions_.begin(),
         positions_.end(),
         [](const auto& pair) {
-            return std::holds_alternative<Deck>(pair.second);
+            return HoldsAlternative<Deck>(pair.second);
         });
 }
 
@@ -418,26 +432,26 @@ Pyramid Pyramid::redeal() const {
     }
 
     auto next_positions = positions_;
-    std::vector<std::pair<int, Card>> discard_cards;
-    discard_cards.reserve(next_positions.size());
+    std::array<std::optional<Card>, kPyramidDeckSize> discard_cards{};
+    std::size_t discard_card_count = 0;
 
     for (const auto& [card, position] : next_positions) {
-        if (const auto* discard = std::get_if<Discard>(&position); discard != nullptr) {
-            discard_cards.emplace_back(discard->number, card);
+        if (const auto* discard = GetIf<Discard>(&position); discard != nullptr) {
+            const auto index = static_cast<std::size_t>(discard->number);
+            discard_cards[index] = card;
+            if (discard_card_count <= index) {
+                discard_card_count = index + 1;
+            }
         }
     }
 
-    std::sort(
-        discard_cards.begin(),
-        discard_cards.end(),
-        [](const auto& lhs, const auto& rhs) {
-            return lhs.first > rhs.first;
-        });
-
     int deck_number = 0;
-    for (const auto& [discard_number, card] : discard_cards) {
-        (void)discard_number;
-        MutablePosition(next_positions, card) = Deck{deck_number++};
+    for (std::size_t i = discard_card_count; i > 0; --i) {
+        if (!discard_cards[i - 1].has_value()) {
+            continue;
+        }
+
+        MutablePosition(next_positions, *discard_cards[i - 1]) = Deck{deck_number++};
     }
 
     return Pyramid{std::move(next_positions)};
@@ -459,7 +473,7 @@ Pyramid Pyramid::draw(const card_type& card) const {
             next_positions.begin(),
             next_positions.end(),
             [](const auto& pair) {
-                return std::holds_alternative<Discard>(pair.second);
+                return HoldsAlternative<Discard>(pair.second);
             }))};
     }
 

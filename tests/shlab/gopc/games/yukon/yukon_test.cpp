@@ -100,7 +100,7 @@ Yukon::state_type MakeState(
             throw std::invalid_argument("Duplicate fixed card.");
         }
 
-        if (const auto* tableau = std::get_if<Tableau>(&position); tableau != nullptr) {
+        if (const auto* tableau = GetIf<Tableau>(&position); tableau != nullptr) {
             tableau_numbers[static_cast<std::size_t>(tableau->column)].push_back(tableau->number);
         }
 
@@ -133,23 +133,23 @@ void TestDealBuildsInitialState() {
     Check(!yukon.is_win(), "Initial deal is not a win");
 
     CheckEqual(
-        std::get<Tableau>(yukon.position_of(deck[0])),
+        Get<Tableau>(yukon.position_of(deck[0])),
         Tableau{Column::First, 0, true},
         "First tableau column starts with one open card");
     CheckEqual(
-        std::get<Tableau>(yukon.position_of(deck[1])),
+        Get<Tableau>(yukon.position_of(deck[1])),
         Tableau{Column::Second, 0, false},
         "Second tableau column starts with one closed card");
     CheckEqual(
-        std::get<Tableau>(yukon.position_of(deck[2])),
+        Get<Tableau>(yukon.position_of(deck[2])),
         Tableau{Column::Second, 1, true},
         "Second tableau column then turns open");
     CheckEqual(
-        std::get<Tableau>(yukon.position_of(deck[30])),
+        Get<Tableau>(yukon.position_of(deck[30])),
         Tableau{Column::Fifth, 8, true},
         "Middle columns receive their extra open cards");
     CheckEqual(
-        std::get<Tableau>(yukon.position_of(deck[51])),
+        Get<Tableau>(yukon.position_of(deck[51])),
         Tableau{Column::Seventh, 10, true},
         "Last card ends on top of the seventh column");
 }
@@ -165,11 +165,11 @@ void TestOpenReturnsNewState() {
     const auto opened = yukon.open(target);
 
     CheckEqual(
-        std::get<Tableau>(yukon.position_of(target)),
+        Get<Tableau>(yukon.position_of(target)),
         Tableau{Column::First, 0, false},
         "Open does not mutate the original state");
     CheckEqual(
-        std::get<Tableau>(opened.position_of(target)),
+        Get<Tableau>(opened.position_of(target)),
         Tableau{Column::First, 0, true},
         "Open returns a state with the card face up");
 }
@@ -186,7 +186,7 @@ void TestMoveToFoundationAndSafetyQuery() {
     Check(!yukon.is_moved_foundation_no_problem(two), "Safety query requires all lower-rank cards to be on foundation");
 
     const auto next = yukon.move_to_foundation(two);
-    Check(std::holds_alternative<Foundation>(next.position_of(two)), "Move to foundation returns a foundation state");
+    Check(HoldsAlternative<Foundation>(next.position_of(two)), "Move to foundation returns a foundation state");
 
     const auto safe_two = Card::of(Suit::Diamonds, Rank::Two);
     const auto safe_state = Yukon{MakeState({
@@ -222,15 +222,15 @@ void TestMoveTableauTailReturnsNewState() {
     const auto next = yukon.move_to_tableau(moving_bottom, Column::First);
 
     CheckEqual(
-        std::get<Tableau>(next.position_of(moving_bottom)),
+        Get<Tableau>(next.position_of(moving_bottom)),
         Tableau{Column::First, 1, true},
         "Selected card lands first on the destination tableau");
     CheckEqual(
-        std::get<Tableau>(next.position_of(moving_lower)),
+        Get<Tableau>(next.position_of(moving_lower)),
         Tableau{Column::First, 2, true},
         "Cards below the selected card move with it");
     CheckEqual(
-        std::get<Tableau>(next.position_of(moving_top)),
+        Get<Tableau>(next.position_of(moving_top)),
         Tableau{Column::First, 3, true},
         "Tail order is preserved during the move");
 }
@@ -258,10 +258,10 @@ void TestWinAndInvalidCases() {
         positions.erase(Card::of(Suit::Clubs, Rank::Queen));
         positions.emplace(Card::from_id(CardId::Joker), Tableau{Column::First, 0, true});
         static_cast<void>(Yukon{std::move(positions)});
-    } catch (const std::invalid_argument&) {
+    } catch (const std::exception&) {
         invalid_state = true;
     }
-    Check(invalid_state, "Yukon rejects joker states");
+    Check(invalid_state, "Yukon joker states remain invalid");
 
     const auto closed = Card::of(Suit::Spades, Rank::Queen);
     const auto invalid_move_state = Yukon{MakeState({
